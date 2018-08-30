@@ -1,0 +1,201 @@
+---
+title: "Multi-dimensional reward evaluation in mice"
+header-includes:
+   - \usepackage{lineno}
+   - \linenumbers
+output:   
+  bookdown::pdf_document2:
+    number_sections: no
+    toc: no
+bibliography: MDRE.bib
+---
+
+Vladislav Nachev^1,\*,&#8224;,\S^, Marion Rivalan^1,&#8224;,\S^, York Winter^1,\S^
+
+^1^ Humboldt University, Berlin, Germany
+
+**^\*^For correspondence:** vladislav.nachev\@charite.de  
+^&#8224;^These authors contributed equally to this work
+
+**Present Address:** ^\S^Dept. of Biology, Humboldt University, Philippstr. 13, 10099 Berlin, Germany
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Abstract
+
+Please provide an abstract of no more than 150 words. Your abstract should explain the main contributions of your article, and should not contain any material that is not included in the main text. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat.
+
+# Introduction
+
+Your introduction goes here! Some examples of commonly used commands and features are listed below, to help you get started.
+
+Here is a citation: [@kacelnik_risky_1998]
+An inline citation has no [] around it, like this: @rivalan_principles_2017.
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
+
+# Results
+
+```{r, echo = FALSE, include = FALSE}
+library(tidyverse)
+library(lubridate)
+library(MCMCglmm)
+library(coin)
+library(BayesFactor)
+library(citr)
+
+miceChoices <- read.csv2(file = "ChoicesOutput.csv", header = TRUE, dec = ".", sep = ";",
+                            na.strings = "NA") %>%
+  mutate(vol = if_else(cohort == 2, vol * 4.8, vol))
+
+miceChoices <- miceChoices %>%
+  group_by(IdLabel, day) %>%
+  filter(hour(DateTime) < 9 | hour(DateTime) > 15) %>% # due to older program version the initial visits
+  # before the starting could not be flagged and therefore could not be removed by CSVreader.R
+  # therefore they need to be removed here
+  mutate(count = 1:n(), revcount = n():1, cohort = factor(cohort)) %>%
+  group_by(rel,IdLabel,day) %>%
+  mutate(relcount = 1:n()) %>%
+  ungroup()
+
+summaries <- miceChoices %>%
+  group_by(cond, IdLabel, experiment, cohort, rint) %>%
+  # take all visits after the first 150 visits at the relevant dispensers:
+  filter(relcount > 150) %>%
+  # in the following lines is an alternative cut-off point, which leads to very similar results
+  # take the last 100 visits at any of the dispensers:
+  # filter(revcount < 101) %>%
+  summarise(performance = mean(prof, na.rm = TRUE), sampling = 1 - mean(rel),
+            Ntot = n(), Nrel = sum(rel),successes_perf = sum(prof, na.rm = T),
+            successes_sampl =  Ntot - Nrel)
+
+exp3_tab <- miceChoices %>%
+  filter(cohort != 2, experiment == 3, !str_detect(cond,"[r]")) %>%
+  group_by(cond) %>%
+  summarise(vol = max(volm), prob = max(prob)) %>%
+  mutate(volm = vol/max(vol),
+         probm = prob/max(prob),
+         dim = str_sub(cond, 1, 1),
+         bg_level = ifelse(dim == "P", volm, probm)) %>%
+  droplevels()
+
+exp1 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 1)
+exp2 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 2)
+exp3 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 3) %>%
+  inner_join(exp3_tab) %>%
+  droplevels()
+exp4 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 4)
+
+```
+
+Here is where the results are described. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.  
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.  
+
+## Some tables and figures
+(ref:labresoverview) **Overview of discrimination performance of all mice in all experiments.** More text perhaps.
+
+```{r resoverview, echo = FALSE, fig.cap="(ref:labresoverview)", echo = FALSE}
+
+summaries %>%
+  filter(!str_detect(cond, "[r]")) %>%
+  ggplot(aes(cond, performance, color = cohort, group = IdLabel)) + geom_point() + geom_line() +
+  facet_grid(experiment ~ .) + xlab("condition") + ylab("discrimination performance") +
+  theme_bw()
+```
+
+You can also embed plots, for example in Fig. \@ref(fig:resoverview).  
+
+(ref:labresexp1) **Some text about the results from Experiment 1**. More text after that
+
+```{r exp1, echo = FALSE, fig.cap="(ref:labresexp1)", echo = FALSE}
+exp1_simpl <- exp1 %>%
+  ungroup() %>%
+  mutate(cond = as.factor(ifelse(str_length(cond) == 4, str_sub(cond, 1, 2),
+                                 as.character(cond)))) %>%
+  group_by(cond, IdLabel, cohort) %>%
+  summarise(performance = mean(performance))
+
+exp1_diff <- exp1_simpl %>%
+  spread(cond, performance) %>%
+  mutate("BP-BV" = BP - BV, "BP-C" = BP - C, "BV-C" = BV - C,
+         "BP-I" = BP - 1 + I, "BV-I" = BV - I) %>%
+  select(-BV, -BP, -C, -I) %>%
+  gather(cond, difference, -cohort, -IdLabel)
+
+n_compare <- exp1_diff %>%
+  ungroup() %>%
+  filter(cond != "BP-BV") %>%
+  select(cond) %>%
+  unique() %>%
+  nrow()
+
+alpha_1 <- 0.05 / (n_compare - 1)
+
+set.seed(42)
+exp1_diff %>%
+  filter(cohort != 2, cond != "BP-BV") %>%
+  ggplot(aes(cond, difference)) +
+  geom_hline(yintercept = 0.1, linetype = 2) + geom_hline(yintercept = -0.1, linetype = 2) +
+  stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
+               fun.args = list(conf.int = 1 - 2*(alpha_1)),
+               color = "darkblue", size = 1) +
+  theme_bw() + geom_point(aes(color = cohort), alpha = 0.5)
+
+```
+
+
+(ref:labresexp2) **Some text about the results from Experiment 2**. More text after that
+
+```{r exp2, echo = FALSE, fig.cap="(ref:labresexp2)", echo = FALSE}
+exp2_simpl <- exp2 %>%
+  ungroup() %>%
+  mutate(cond = as.factor(ifelse(str_length(cond) == 4, str_sub(cond, 1, 2),
+                                 as.character(cond)))) %>%
+  group_by(cond, IdLabel, cohort) %>%
+  summarise(performance = mean(performance))
+
+exp2_diff <- exp2_simpl %>%
+  spread(cond, performance) %>%
+  mutate("BP-BV" = BP - BV, "BP-C" = BP - C, "BV-C" = BV - C,
+         "BP-I" = BP - 1 + I, "BV-I" = BV - I) %>%
+  select(-BV, -BP, -C, -I) %>%
+  gather(cond, difference, -cohort, -IdLabel)
+
+set.seed(42)
+exp2_diff %>%
+  filter(cohort != 2, cond != "BP-BV") %>%
+  ggplot(aes(cond, difference)) +
+  geom_hline(yintercept = 0.1, linetype = 2) + geom_hline(yintercept = -0.1, linetype = 2) +
+  stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
+               fun.args = list(conf.int = 1 - 2*(alpha_1)),
+               color = "darkblue", size = 1) +
+  theme_bw() + geom_point(aes(color = cohort), alpha = 0.5)
+
+```
+
+
+  
+# Discussion
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
+
+# Methods and Materials
+
+Guidelines can be included for standard research article sections, such as this one. 
+
+Any "personal communications" relating to unpublished data should be incorporated within the main text, in the following format: (Author Initial(s) and Surname, personal communication, Month and Year). Authors should have permission from anyone named in this way and should be aware that a supporting letter will sometimes be requested.
+Within the Materials and Methods and/or figure legends, we encourage authors to provide complete information about their experiments, analyses, or data collection to ensure that readers can easily understand what was measured and analysed, and can accurately perform the relevant protocols.
+In cases where a new method within the submission would benefit from step-by-step protocols in addition to the methods described in the article, we would encourage authors to also consider submitting a detailed protocol to Bio-protocol.
+On first mention, please provide details of any manufacturers in the following format: company name, city, country (or state, if based in the United States).
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
+
+# Acknowledgments
+Individuals who have contributed materially to the work, but do not satisfy the authorship criteria should be listed in the acknowledgements section. Authors should seek permission to include any individuals mentioned in the acknowledgements.  
+
+# Competing interests
+At this stage we request that the corresponding author provides a statement of financial and non-financial competing interests on behalf of all authors. Examples include paid employment or consultancy, stock ownership, patent applications, personal relationships with relevant individuals, and membership of an advisory board.
+
+# References
