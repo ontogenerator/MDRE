@@ -9,7 +9,6 @@ output:
     toc: no
 bibliography: MDRE.bib
 ---
-
 Vladislav Nachev^1,\*,&#8224;,\S^, Marion Rivalan^1,&#8224;,\S^, York Winter^1,\S^
 
 ^1^ Humboldt University, Berlin, Germany
@@ -20,7 +19,7 @@ Vladislav Nachev^1,\*,&#8224;,\S^, Marion Rivalan^1,&#8224;,\S^, York Winter^1,\
 **Present Address:** ^\S^Dept. of Biology, Humboldt University, Philippstr. 13, 10099 Berlin, Germany
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 ```
 
 # Abstract
@@ -41,7 +40,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in
 ```{r, echo = FALSE, include = FALSE}
 library(tidyverse)
 library(lubridate)
-library(MCMCglmm)
+library(lme4)
 library(coin)
 library(BayesFactor)
 library(citr)
@@ -72,9 +71,10 @@ summaries <- miceChoices %>%
             successes_sampl =  Ntot - Nrel)
 
 exp3_tab <- miceChoices %>%
-  filter(cohort != 2, experiment == 3, !str_detect(cond,"[r]")) %>%
-  group_by(cond) %>%
+  filter(experiment == 3, !str_detect(cond,"[r]")) %>%
+  group_by(cohort, cond) %>%
   summarise(vol = max(volm), prob = max(prob)) %>%
+  ungroup() %>%
   mutate(volm = vol/max(vol),
          probm = prob/max(prob),
          dim = str_sub(cond, 1, 1),
@@ -88,6 +88,7 @@ exp3 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 3) %>%
   droplevels()
 exp4 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 4)
 
+sesoi <- 0.1 # smallest effect size of interest
 ```
 
 Here is where the results are described. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.  
@@ -97,12 +98,13 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in
 (ref:labresoverview) **Overview of discrimination performance of all mice in all experiments.** More text perhaps.
 
 ```{r resoverview, echo = FALSE, fig.cap="(ref:labresoverview)", echo = FALSE}
+cbbPalette <- c("#000000", "#2C96BF", "#D4D93D", "#148C76", "#35F265", "#048C8C", "#D55E00", "#F0E442")
 
 summaries %>%
   filter(!str_detect(cond, "[r]")) %>%
   ggplot(aes(cond, performance, color = cohort, group = IdLabel)) + geom_point() + geom_line() +
   facet_grid(experiment ~ .) + xlab("condition") + ylab("discrimination performance") +
-  theme_bw()
+  theme_bw() + scale_color_manual(values = cbbPalette)
 ```
 
 You can also embed plots, for example in Fig. \@ref(fig:resoverview).  
@@ -131,18 +133,19 @@ n_compare <- exp1_diff %>%
   unique() %>%
   nrow()
 
-alpha_1 <- 0.05 / (n_compare - 1)
+alpha_1 <- 0.05
+alpha_2 <- 0.05 / (n_compare - 1) # alpha corrected for multiple comparisons
 
 set.seed(42)
 exp1_diff %>%
-  filter(cohort != 2, cond != "BP-BV") %>%
+  filter(cond != "BP-BV") %>%
   ggplot(aes(cond, difference)) +
-  geom_hline(yintercept = 0.1, linetype = 2) + geom_hline(yintercept = -0.1, linetype = 2) +
+  geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
   stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
-               fun.args = list(conf.int = 1 - 2*(alpha_1)),
+               fun.args = list(conf.int = 1 - 2*(alpha_2)),
                color = "darkblue", size = 1) +
-  theme_bw() + geom_point(aes(color = cohort), alpha = 0.5)
-
+  theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
+  xlab("") + scale_color_manual(values = cbbPalette)
 ```
 
 
@@ -165,13 +168,55 @@ exp2_diff <- exp2_simpl %>%
 
 set.seed(42)
 exp2_diff %>%
-  filter(cohort != 2, cond != "BP-BV") %>%
+  filter(cond != "BP-BV") %>%
   ggplot(aes(cond, difference)) +
-  geom_hline(yintercept = 0.1, linetype = 2) + geom_hline(yintercept = -0.1, linetype = 2) +
+  geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
   stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
                fun.args = list(conf.int = 1 - 2*(alpha_1)),
                color = "darkblue", size = 1) +
-  theme_bw() + geom_point(aes(color = cohort), alpha = 0.5)
+  theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
+  xlab("") + scale_color_manual(values = cbbPalette)
+
+```
+
+
+(ref:labresexp3) **Some text about the results from Experiment 3**. More text after that
+
+```{r exp3, echo = FALSE, fig.cap="(ref:labresexp3)", echo = FALSE}
+
+slopes <- exp3 %>%
+  split(.$dim) %>%
+  map(~ lmer(performance ~ bg_level + (bg_level|IdLabel), data = .)) %>%
+  map(coef) %>%
+  map("IdLabel") %>%
+  map_df(~rownames_to_column(., var = "IdLabel"))
+
+dims <- data.frame(dimension = rep(c("prob", "vol"), each = 24))
+
+cohorts <- exp3 %>%
+  ungroup() %>%
+  select(IdLabel, cohort) %>%
+  distinct()
+
+slopes <- slopes %>%
+  bind_cols(dims) %>%
+  rename(slope = bg_level) %>%
+  inner_join(cohorts)
+
+sl_sesoi <- data.frame(val = c(4/20, 20/20),
+                       performance = c(0.8, 0.9))
+
+sl_sesoi <- coef(lm(performance ~ val, data = sl_sesoi))[2]
+
+set.seed(42)
+slopes %>%
+  ggplot(aes(dimension, slope)) +
+  stat_summary(fun.data = mean_cl_boot,
+               fun.args = list(conf.int = 1 - 2*(alpha_1)),
+               color = "darkblue", size = 1) +
+  geom_hline(yintercept = sl_sesoi, linetype = 2) + geom_hline(yintercept = -sl_sesoi, linetype = 2) +
+  theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
+  scale_color_manual(values = cbbPalette)
 
 ```
 
@@ -179,6 +224,7 @@ exp2_diff %>%
   
 # Discussion
 
+The effect of the background level of probability on volume in Experiment 3 was only present if the probability of 0.2 was included, otherwise discrimination performance was unaffected by probability.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
 # Methods and Materials
@@ -192,10 +238,85 @@ On first mention, please provide details of any manufacturers in the following f
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
+# Appendix
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
+
+(ref:labappfig1) **Some text about the Appendix Fig. 1**. More text after that
+
+```{r appfig1, echo = FALSE, fig.cap="(ref:labappfig1)", echo = FALSE}
+alpha_14 <- 0.05/5
+
+exp14 <- summaries %>%
+  filter(!str_detect(cond, "[r]"), experiment == 1 | experiment == 4) %>%
+  mutate(rep = ifelse(experiment == 1, 1, 2)) %>%
+  ungroup() %>%
+  mutate(rep = factor(rep))
+
+exp14_simpl <- exp14 %>%
+  ungroup() %>%
+  # mutate(cond = as.factor(ifelse(str_length(cond) == 4, str_sub(cond, 1, 2),
+  #                                as.character(cond)))) %>%
+  group_by(cond, IdLabel, cohort, rep) %>%
+  summarise(performance = mean(performance))
+
+# exp14_simpl %>%
+#   ggplot(aes(cond, performance)) + geom_point(aes(color = cohort, shape = rep))
+
+exp14_diff <- exp14_simpl %>%
+  spread(rep, performance) %>%
+  mutate(difference = `1` - `2`)
+
+set.seed(42)
+exp14_diff %>%
+  # filter(cohort != 2) %>%
+  ggplot() +
+  geom_hline(yintercept = 0.1, linetype = 2) + geom_hline(yintercept = -0.1, linetype = 2) +
+  stat_summary(aes(cond, difference, color = NULL), fun.data = mean_cl_boot,
+               fun.args = list(conf.int = 1 - 2 * alpha_14),
+               color = "darkblue", alpha = 0.7, size = 1) +
+  theme_bw() + geom_jitter(aes(cond, difference, color = cohort), alpha = 0.7, width = 0.1) +
+  scale_color_manual(values = cbbPalette)
+
+```
+
+
+(ref:labappfig2) **Some text about the Appendix Fig. 2**. More text after that
+
+```{r appfig2, echo = FALSE, fig.cap="(ref:labappfig2)", echo = FALSE}
+exp4_simpl <- exp14_simpl %>%
+  filter(rep == 2) %>%
+  ungroup() %>%
+  mutate(cond = as.factor(ifelse(str_length(cond) == 4, str_sub(cond, 1, 2),
+                                 as.character(cond)))) %>%
+  group_by(cond, IdLabel, cohort) %>%
+  summarise(performance = mean(performance))
+
+exp4_diff <- exp4_simpl %>%
+  spread(cond, performance) %>%
+  mutate("BP-BV" = BP - BV, "BP-C" = BP - C, "BV-C" = BV - C,
+         "BP-I" = BP - 1 + I, "BV-I" = BV - I) %>%
+  select(-BV, -BP, -C, -I) %>%
+  gather(cond, difference, -cohort, -IdLabel)
+
+set.seed(42)
+exp4_diff %>%
+ filter(cond != "BP-BV") %>%
+  ggplot(aes(cond, difference)) +
+  geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
+  stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
+               fun.args = list(conf.int = 1 - 2*(alpha_1)),
+               color = "darkblue", size = 1) +
+  theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
+  xlab("") + scale_color_manual(values = cbbPalette)
+```
+
 # Acknowledgments
 Individuals who have contributed materially to the work, but do not satisfy the authorship criteria should be listed in the acknowledgements section. Authors should seek permission to include any individuals mentioned in the acknowledgements.  
 
 # Competing interests
 At this stage we request that the corresponding author provides a statement of financial and non-financial competing interests on behalf of all authors. Examples include paid employment or consultancy, stock ownership, patent applications, personal relationships with relevant individuals, and membership of an advisory board.
+
+
 
 # References
