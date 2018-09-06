@@ -19,7 +19,7 @@ Vladislav Nachev^1,\*,&#8224;,\S^, Marion Rivalan^1,&#8224;,\S^, York Winter^1,\
 **Present Address:** ^\S^Dept. of Biology, Humboldt University, Philippstr. 13, 10099 Berlin, Germany
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 ```
 
 # Abstract
@@ -37,15 +37,17 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in
 
 # Results
 
-```{r, echo = FALSE, include = FALSE}
+```{r, include = FALSE}
 library(tidyverse)
+library(gridExtra)
+library(grid)
 library(lubridate)
 library(lme4)
 library(coin)
-library(BayesFactor)
-library(citr)
+# library(BayesFactor)
+# library(citr)
 
-miceChoices <- read.csv2(file = "ChoicesOutput.csv", header = TRUE, dec = ".", sep = ";",
+miceChoices <- read.csv2(file = "data/ChoicesOutput.csv", header = TRUE, dec = ".", sep = ";",
                             na.strings = "NA") %>%
   mutate(vol = if_else(cohort == 2, vol * 4.8, vol))
 
@@ -54,7 +56,7 @@ miceChoices <- miceChoices %>%
   filter(hour(DateTime) < 9 | hour(DateTime) > 15) %>% # due to older program version the initial visits
   # before the starting could not be flagged and therefore could not be removed by CSVreader.R
   # therefore they need to be removed here
-  mutate(count = 1:n(), revcount = n():1, cohort = factor(cohort)) %>%
+  mutate(count = 1:n(), revcount = n():1) %>%
   group_by(rel,IdLabel,day) %>%
   mutate(relcount = 1:n()) %>%
   ungroup()
@@ -68,7 +70,9 @@ summaries <- miceChoices %>%
   # filter(revcount < 101) %>%
   summarise(performance = mean(prof, na.rm = TRUE), sampling = 1 - mean(rel),
             Ntot = n(), Nrel = sum(rel),successes_perf = sum(prof, na.rm = T),
-            successes_sampl =  Ntot - Nrel)
+            successes_sampl =  Ntot - Nrel) %>%
+  ungroup() %>%
+  mutate(cohort = factor(cohort))
 
 exp3_tab <- miceChoices %>%
   filter(experiment == 3, !str_detect(cond,"[r]")) %>%
@@ -78,7 +82,8 @@ exp3_tab <- miceChoices %>%
   mutate(volm = vol/max(vol),
          probm = prob/max(prob),
          dim = str_sub(cond, 1, 1),
-         bg_level = ifelse(dim == "P", volm, probm)) %>%
+         bg_level = ifelse(dim == "P", volm, probm),
+         cohort = as.factor(cohort)) %>%
   droplevels()
 
 exp1 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 1)
@@ -97,21 +102,44 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in
 ## Some tables and figures
 (ref:labresoverview) **Overview of discrimination performance of all mice in all experiments.** More text perhaps.
 
-```{r resoverview, echo = FALSE, fig.cap="(ref:labresoverview)", echo = FALSE}
-cbbPalette <- c("#000000", "#2C96BF", "#D4D93D", "#148C76", "#35F265", "#048C8C", "#D55E00", "#F0E442")
+```{r resoverview, fig.cap="(ref:labresoverview)"}
+# cbbPalette <- c("#000000", "#2C96BF", "#D4D93D", "#148C76", "#35F265", "#048C8C", "#D55E00", "#F0E442")
 
-summaries %>%
-  filter(!str_detect(cond, "[r]")) %>%
+ggexp12_4 <- summaries %>%
+  filter(!str_detect(cond, "[r]"), experiment != 3) %>%
   ggplot(aes(cond, performance, color = cohort, group = IdLabel)) + geom_point() + geom_line() +
   facet_grid(experiment ~ .) + xlab("condition") + ylab("discrimination performance") +
-  theme_bw() + scale_color_manual(values = cbbPalette)
+  theme_bw() + scale_color_viridis_d() + guides(color = FALSE) +
+  theme(strip.text.y = element_text(angle = 0))
+
+ggexp3 <- exp3 %>%
+  ggplot(aes(cond, performance, color = cohort, group = IdLabel)) + geom_point() + geom_line() +
+  facet_grid(experiment ~ .) + xlab("condition") +
+  scale_y_continuous(name = "", breaks = seq(0, 1, 0.25)) +
+  theme_bw() + scale_color_viridis_d() + theme(legend.position = "bottom") +
+  theme(strip.text.y = element_text(angle = 0))
+
+get_legend <- function(a.gplot){ 
+  tmp <- ggplot_gtable(ggplot_build(a.gplot)) 
+  leg <- which(map(tmp$grobs, "name") == "guide-box") 
+  legend <- tmp$grobs[[leg]] 
+  return(legend)} 
+
+leg <- get_legend(ggexp3)
+
+lay <- rbind(c(1, 3),
+             c(1, 2),
+             c(1, NA))
+
+grid.arrange(ggexp12_4, ggexp3 + guides(color = FALSE), leg, layout_matrix = lay,
+             heights = c(1, 1.3, 1))
 ```
 
 You can also embed plots, for example in Fig. \@ref(fig:resoverview).  
 
 (ref:labresexp1) **Some text about the results from Experiment 1**. More text after that
 
-```{r exp1, echo = FALSE, fig.cap="(ref:labresexp1)", echo = FALSE}
+```{r exp1, fig.cap="(ref:labresexp1)"}
 exp1_simpl <- exp1 %>%
   ungroup() %>%
   mutate(cond = as.factor(ifelse(str_length(cond) == 4, str_sub(cond, 1, 2),
@@ -145,13 +173,13 @@ exp1_diff %>%
                fun.args = list(conf.int = 1 - 2*(alpha_2)),
                color = "darkblue", size = 1) +
   theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
-  xlab("") + scale_color_manual(values = cbbPalette)
+  xlab("") + scale_color_viridis_d()
 ```
 
 
 (ref:labresexp2) **Some text about the results from Experiment 2**. More text after that
 
-```{r exp2, echo = FALSE, fig.cap="(ref:labresexp2)", echo = FALSE}
+```{r exp2, fig.cap="(ref:labresexp2)"}
 exp2_simpl <- exp2 %>%
   ungroup() %>%
   mutate(cond = as.factor(ifelse(str_length(cond) == 4, str_sub(cond, 1, 2),
@@ -175,14 +203,14 @@ exp2_diff %>%
                fun.args = list(conf.int = 1 - 2*(alpha_1)),
                color = "darkblue", size = 1) +
   theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
-  xlab("") + scale_color_manual(values = cbbPalette)
+  xlab("") + scale_color_viridis_d()
 
 ```
 
 
 (ref:labresexp3) **Some text about the results from Experiment 3**. The relative intensities for the two dimensions were the same in cohorts 1,3 (rint = 0.86), but different in cohort 2 (rintp = 0.86, rintv = 0.67)
 
-```{r exp3, echo = FALSE, fig.cap="(ref:labresexp3)", echo = FALSE}
+```{r exp3, fig.cap="(ref:labresexp3)"}
 
 slopes <- exp3 %>%
   split(.$dim) %>%
@@ -216,11 +244,49 @@ slopes %>%
                color = "darkblue", size = 1) +
   geom_hline(yintercept = sl_sesoi, linetype = 2) + geom_hline(yintercept = -sl_sesoi, linetype = 2) +
   theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
-  scale_color_manual(values = cbbPalette)
+  scale_color_viridis_d()
 
 ```
 
 
+(ref:labsimexp1) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 1**. More text to explain the figure  
+
+```{r simexp1, fig.height = 7, fig.cap="(ref:labsimexp1)"}
+
+summ_Exp1 <- read.csv2(file = "data/summ_Exp1.csv", header = TRUE, dec = ".", sep = ";",
+                       na.strings = "NA") %>%
+  rename(cond = cond_names) %>%
+  group_by(cond, Choice_type) %>%
+  mutate(medperf = median(performance))
+
+summ_Exp2 <- read.csv2(file = "data/summ_Exp2.csv", header = TRUE, dec = ".", sep = ";",
+                       na.strings = "NA") %>%
+  rename(cond = cond_names) %>%
+  group_by(cond, Choice_type) %>%
+  mutate(medperf = median(performance))
+
+summ_Exp3 <- read.csv2(file = "data/summ_Exp3.csv", header = TRUE, dec = ".", sep = ";",
+                       na.strings = "NA") %>%
+  rename(cond = cond_names) %>%
+  group_by(cond, Choice_type) %>%
+  mutate(medperf = median(performance))
+
+exp1 <- exp1 %>%
+  group_by(cond) %>%
+  mutate(medperf = median(performance))
+
+ggplot() +
+  geom_density(aes(performance), size = 1.2, data = summ_Exp1) +
+  # stat_summary(aes(cond_names, performance, group = Choice_type), fun.data = "mean_cl_boot") +
+  facet_grid(Choice_type ~ cond) +
+  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp1) +
+  theme_bw() + scale_fill_viridis_d() +
+  scale_x_continuous(breaks = c(0, 0.5, 1)) +
+  geom_vline(aes(xintercept = medperf), linetype = 2, data = exp1) +
+  geom_vline(aes(xintercept = medperf), linetype = 3, data = summ_Exp1) +
+  labs(fill = "cohort") + guides(color = FALSE)
+
+```
   
 # Discussion
 
@@ -244,7 +310,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in
 
 (ref:labappfig1) **Some text about the Appendix Fig. 1**. More text after that
 
-```{r appfig1, echo = FALSE, fig.cap="(ref:labappfig1)", echo = FALSE}
+```{r appfig1, fig.cap="(ref:labappfig1)"}
 alpha_14 <- 0.05/5
 
 exp14 <- summaries %>%
@@ -276,14 +342,14 @@ exp14_diff %>%
                fun.args = list(conf.int = 1 - 2 * alpha_14),
                color = "darkblue", alpha = 0.7, size = 1) +
   theme_bw() + geom_jitter(aes(cond, difference, color = cohort), alpha = 0.7, width = 0.1) +
-  scale_color_manual(values = cbbPalette)
+  scale_color_viridis_d()
 
 ```
 
 
 (ref:labappfig2) **Some text about the Appendix Fig. 2**. More text after that
 
-```{r appfig2, echo = FALSE, fig.cap="(ref:labappfig2)", echo = FALSE}
+```{r appfig2, fig.cap="(ref:labappfig2)"}
 exp4_simpl <- exp14_simpl %>%
   filter(rep == 2) %>%
   ungroup() %>%
@@ -308,7 +374,7 @@ exp4_diff %>%
                fun.args = list(conf.int = 1 - 2*(alpha_1)),
                color = "darkblue", size = 1) +
   theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
-  xlab("") + scale_color_manual(values = cbbPalette)
+  xlab("") + scale_color_viridis_d()
 ```
 
 # Acknowledgments
