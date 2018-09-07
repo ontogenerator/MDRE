@@ -3,6 +3,8 @@ title: "Multi-dimensional reward evaluation in mice"
 header-includes:
    - \usepackage{lineno}
    - \linenumbers
+   # - \usepackage{float} \floatplacement{figure}{H}
+   - \newcommand{\beginsupplement}{\setcounter{table}{0}  \renewcommand{\thetable}{A\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{A\arabic{figure}}}
 output:   
   bookdown::pdf_document2:
     number_sections: no
@@ -44,6 +46,7 @@ library(grid)
 library(lubridate)
 library(lme4)
 library(coin)
+library(kableExtra)
 # library(BayesFactor)
 # library(citr)
 
@@ -87,7 +90,10 @@ exp3_tab <- miceChoices %>%
   droplevels()
 
 exp1 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 1)
-exp2 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 2)
+BVP1 <- exp1 %>%
+  filter(cond == "BVP1")
+exp2 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 2) %>%
+  bind_rows(BVP1)
 exp3 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 3) %>%
   inner_join(exp3_tab) %>%
   droplevels()
@@ -103,8 +109,6 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in
 (ref:labresoverview) **Overview of discrimination performance of all mice in all experiments.** More text perhaps.
 
 ```{r resoverview, fig.cap="(ref:labresoverview)"}
-# cbbPalette <- c("#000000", "#2C96BF", "#D4D93D", "#148C76", "#35F265", "#048C8C", "#D55E00", "#F0E442")
-
 ggexp12_4 <- summaries %>%
   filter(!str_detect(cond, "[r]"), experiment != 3) %>%
   ggplot(aes(cond, performance, color = cohort, group = IdLabel)) + geom_point() + geom_line() +
@@ -249,43 +253,52 @@ slopes %>%
 ```
 
 
-(ref:labsimexp1) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 1**. More text to explain the figure  
 
-```{r simexp1, fig.height = 7, fig.cap="(ref:labsimexp1)"}
+```{r}
 
-summ_Exp1 <- read.csv2(file = "data/summ_Exp1.csv", header = TRUE, dec = ".", sep = ";",
-                       na.strings = "NA") %>%
-  rename(cond = cond_names) %>%
-  group_by(cond, Choice_type) %>%
-  mutate(medperf = median(performance))
+sims_data <- map(list("data/summ_Exp1.csv", "data/summ_Exp2.csv",
+                       "data/summ_Exp3.csv", "data/summ_Exp1.csv"),
+                     ~ read.csv2(file = ., header = TRUE, dec = ".", sep = ";",
+                                na.strings = "NA")) %>%
+  map2_df(1:4, ~update_list(.x, experiment = .y)) %>%
+  rename(cond = cond_names)
+  
+summ_sims <- sims_data %>%
+  group_by(experiment, Choice_type, cond) %>%
+  summarise(medperf = median(performance))
 
-summ_Exp2 <- read.csv2(file = "data/summ_Exp2.csv", header = TRUE, dec = ".", sep = ";",
-                       na.strings = "NA") %>%
-  rename(cond = cond_names) %>%
-  group_by(cond, Choice_type) %>%
-  mutate(medperf = median(performance))
+emp_perf <- summaries %>%
+  filter(!str_detect(cond, "[r]")) %>%
+  select(IdLabel, experiment, cond, performance)
 
-summ_Exp3 <- read.csv2(file = "data/summ_Exp3.csv", header = TRUE, dec = ".", sep = ";",
-                       na.strings = "NA") %>%
-  rename(cond = cond_names) %>%
-  group_by(cond, Choice_type) %>%
-  mutate(medperf = median(performance))
+devs <- summ_sims %>%
+  full_join(emp_perf) %>%
+  mutate(deviance = (medperf - performance)^2)
 
-exp1 <- exp1 %>%
-  group_by(cond) %>%
-  mutate(medperf = median(performance))
+devs <- devs %>%
+  group_by(experiment, Choice_type) %>%
+  summarise(RMSE = sqrt(mean(deviance, na.rm = TRUE))) %>%
+  arrange(experiment, RMSE)
 
-ggplot() +
-  geom_density(aes(performance), size = 1.2, data = summ_Exp1) +
-  # stat_summary(aes(cond_names, performance, group = Choice_type), fun.data = "mean_cl_boot") +
-  facet_grid(Choice_type ~ cond) +
-  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp1) +
-  theme_bw() + scale_fill_viridis_d() +
-  scale_x_continuous(breaks = c(0, 0.5, 1)) +
-  geom_vline(aes(xintercept = medperf), linetype = 2, data = exp1) +
-  geom_vline(aes(xintercept = medperf), linetype = 3, data = summ_Exp1) +
-  labs(fill = "cohort") + guides(color = FALSE)
+ranks <- devs %>%
+  mutate(rank = rank(RMSE)) %>%
+  ungroup() %>%
+  # mutate(experiment = paste("exp.", experiment)) %>%
+  select(-RMSE) %>%
+  spread(experiment, Choice_type) 
+```
 
+Compared to the empirical data, models 2 and 7 performed best (Table \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)).
+
+```{r simRankTable}
+ranks %>%
+  knitr::kable(booktabs = TRUE,
+               caption = "Best performing models ranked by root-mean-square-deviations (RMSD).") %>%
+  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
+                full_width = F) %>%
+  kableExtra::add_header_above(c(" " = 1, "Experiment number" = 4)) %>%
+  kableExtra::footnote(general = "The deviations for the RMSD were calculated from the median of the model to the observed discrimination performances of the experimental mice.", threeparttable = T)
+  
 ```
   
 # Discussion
@@ -304,7 +317,10 @@ On first mention, please provide details of any manufacturers in the following f
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
-# Appendix
+\newpage
+# Appendix {-}
+
+\beginsupplement
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
@@ -375,6 +391,89 @@ exp4_diff %>%
                color = "darkblue", size = 1) +
   theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
   xlab("") + scale_color_viridis_d()
+```
+
+
+
+
+(ref:labsimexp1) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 1**. More text to explain the figure  
+
+```{r simexp1, fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp1)"}
+exp1 <- exp1 %>%
+  group_by(cond) %>%
+  mutate(medperf = median(performance))
+
+ggplot() +
+  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 1)) +
+  facet_grid(Choice_type ~ cond) +
+  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp1) +
+  theme_bw() + scale_fill_viridis_d() +
+  scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
+  geom_vline(aes(xintercept = medperf), linetype = 2, data = exp1) +
+  geom_vline(aes(xintercept = medperf), linetype = 3, size = 1.2, data = summ_sims %>%
+               filter(experiment == 1)) +
+  labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
+
+```
+
+(ref:labsimexp2) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 2**. More text to explain the figure  
+
+```{r simexp2,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp2)"}
+exp2 <- exp2 %>%
+  group_by(cond) %>%
+  mutate(medperf = median(performance))
+
+ggplot() +
+  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 2)) +
+  facet_grid(Choice_type ~ cond) +
+  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp2) +
+  theme_bw() + scale_fill_viridis_d() +
+  scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
+  geom_vline(aes(xintercept = medperf), linetype = 2, data = exp2) +
+  geom_vline(aes(xintercept = medperf), linetype = 3, size = 1.2, data = summ_sims %>%
+               filter(experiment == 2)) +
+  labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
+
+```
+
+(ref:labsimexp3) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 3**. More text to explain the figure 
+
+```{r simexp3,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp3)"}
+exp3 <- exp3 %>%
+  group_by(cond) %>%
+  mutate(medperf = median(performance))
+
+ggplot() +
+  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 3)) +
+  facet_grid(Choice_type ~ cond) +
+  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp3) +
+  theme_bw() + scale_fill_viridis_d() +
+  scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
+  geom_vline(aes(xintercept = medperf), linetype = 2, data = exp3) +
+  geom_vline(aes(xintercept = medperf), linetype = 3, size = 1.2, data = summ_sims %>%
+               filter(experiment == 3)) +
+  labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
+
+```
+
+(ref:labsimexp4) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 4**. More text to explain the figure 
+
+```{r simexp4,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp4)"}
+exp4 <- exp4 %>%
+  group_by(cond) %>%
+  mutate(medperf = median(performance))
+
+ggplot() +
+  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 1)) +
+  facet_grid(Choice_type ~ cond) +
+  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp4) +
+  theme_bw() + scale_fill_viridis_d() +
+  scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
+  geom_vline(aes(xintercept = medperf), linetype = 2, data = exp4) +
+  geom_vline(aes(xintercept = medperf), linetype = 3, size = 1.2, data = summ_sims %>%
+               filter(experiment == 1)) +
+  labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
+
 ```
 
 # Acknowledgments
