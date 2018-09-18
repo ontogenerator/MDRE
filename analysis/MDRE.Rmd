@@ -106,7 +106,7 @@ Here is where the results are described. Lorem ipsum dolor sit amet, consectetur
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.  
 
 ## Some tables and figures
-(ref:labresoverview) **Overview of discrimination performance of all mice in all experiments.** More text perhaps.
+(ref:labresoverview) **Overview of discrimination performance of all mice in all experiments.** Experiments 1 through 4 are shown in different panels (1-4). Each symbol is the mean discrimination performance of an individual mouse over two presentations of the same condition (original and reversal). The experimental conditions are described in detail in Table \@ref(tab:conds). Data are shown in different colors for three diffierent cohorts of eight mice each (total *N* = 24). Cohort 2 (green symbols and lines) was tested in a different cage set-up than cohorts 1 and 2 (see Methods for details). 
 
 ```{r resoverview, fig.cap="(ref:labresoverview)"}
 ggexp12_4 <- summaries %>%
@@ -139,9 +139,7 @@ grid.arrange(ggexp12_4, ggexp3 + guides(color = FALSE), leg, layout_matrix = lay
              heights = c(1, 1.3, 1))
 ```
 
-You can also embed plots, for example in Fig. \@ref(fig:resoverview).  
-
-(ref:labresexp1) **Some text about the results from Experiment 1**. More text after that
+(ref:labresexp1) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 1**. Symbols show the individual differences in discrimination performance for the given conditions of each individual mouse (*N* = 24). Mice from different cohorts are shown in different colors. Large blue symbols give the means and the blue vertical lines the 90%-confidence intervals from bootstraps, corrected for multiple comparisons. When the confidence intervals lie completely within the smallest effect size of interest (sesoi) interval bounded by the dashed lines, there is statistical support for equivalence. When the confidence intervals do not cross the zero line, there is statistical support for difference. If the confidence intervals cross the zero line, but are not completely bounded by the sesoi, the results are inconclusive. The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline treatments for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2.
 
 ```{r exp1, fig.cap="(ref:labresexp1)"}
 exp1_simpl <- exp1 %>%
@@ -181,7 +179,7 @@ exp1_diff %>%
 ```
 
 
-(ref:labresexp2) **Some text about the results from Experiment 2**. More text after that
+(ref:labresexp2) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 2**. Same notation as in Fig. \@ref(fig:exp1). The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline treatments for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2, where the values for condition BVP1 were taken from experiment 1.
 
 ```{r exp2, fig.cap="(ref:labresexp2)"}
 exp2_simpl <- exp2 %>%
@@ -212,7 +210,7 @@ exp2_diff %>%
 ```
 
 
-(ref:labresexp3) **Some text about the results from Experiment 3**. The relative intensities for the two dimensions were the same in cohorts 1,3 (rint = 0.86), but different in cohort 2 (rintp = 0.86, rintv = 0.67)
+(ref:labresexp3) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension**. The two choice options always differed along the relevant dimension (either probability or volume, given on the abscissa) at a fixed relative intensity. The discrimination performance for each mouse was measured at four different levels of the background dimension, which was set at the same values on both choice options, but differed from condition to condition  (Table \@ref(tab:conds)). Each symbol is the average for an individual mouse over the two presentations of the same condition (original and reversal). The smallest effect size of interest was determined to be the slope that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. The remaining notation is the same as in Fig. \@ref(fig:exp1). 
 
 ```{r exp3, fig.cap="(ref:labresexp3)"}
 
@@ -252,7 +250,7 @@ slopes %>%
 
 ```
 
-
+The relative intensities for the two dimensions were the same in cohorts 1,3 (rint = 0.86), but different in cohort 2 (rintp = 0.86, rintv = 0.67).
 
 ```{r}
 
@@ -283,12 +281,22 @@ devs <- devs %>%
 ranks <- devs %>%
   mutate(rank = rank(RMSE)) %>%
   ungroup() %>%
-  # mutate(experiment = paste("exp.", experiment)) %>%
   select(-RMSE) %>%
   spread(experiment, Choice_type) 
 ```
 
 Compared to the empirical data, models 2 and 7 performed best (Table \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)).
+
+```{r modTable}
+data.frame(model = 1:7,
+           description = c("product rule", "random dimension",
+                           "winner takes it all", "probability first",
+                           "volume first", "only volume",
+                           "logproduct rule")) %>%
+  knitr::kable(booktabs = TRUE, caption = "Decision-making models") %>%
+  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
+                full_width = F)
+```
 
 ```{r simRankTable}
 ranks %>%
@@ -296,17 +304,53 @@ ranks %>%
                caption = "Best performing models ranked by root-mean-square-deviations (RMSD).") %>%
   kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
                 full_width = F) %>%
-  kableExtra::add_header_above(c(" " = 1, "Experiment number" = 4)) %>%
+  kableExtra::add_header_above(c(" " = 1, "experiment" = 4)) %>%
   kableExtra::footnote(general = "The deviations for the RMSD were calculated from the median of the model to the observed discrimination performances of the experimental mice.", threeparttable = T)
-  
 ```
-  
+
+
 # Discussion
 
 The effect of the background level of probability on volume in Experiment 3 was only present if the probability of 0.2 was included, otherwise discrimination performance was unaffected by probability.
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
 # Methods and Materials
+
+The different experimental conditions for all animals and cohorts are listed in Table \@ref(tab:conds).
+
+```{r conds}
+conds_tab <- miceChoices %>%
+  ungroup() %>%
+  filter(!str_detect(cond,"[r]"), cohort != 2, between(vol, 1, 20),
+         experiment < 4, prob > 0) %>%
+  select(experiment, cond, vol, prob) %>%
+  distinct() %>%
+  arrange(experiment, cond, vol, prob)
+
+conds_tab <- conds_tab %>%
+  mutate(odd = row_number(cond) %% 2, vol2 = lead(vol), prob2 = lead(prob)) %>%
+  filter(odd == 1) %>%
+  select(-odd)
+
+conds_tab %>%
+  mutate(cond = if_else(cond == "BVP1",
+                       paste0(cond, kableExtra::footnote_marker_alphabet(3)), as.character(cond))) %>%
+  knitr::kable(booktabs = TRUE,
+               caption = "Overview of the experimental conditions in all four experiments.",
+               col.names = c(paste0("experiment", kableExtra::footnote_marker_alphabet(1)),
+                             "condition",
+                             paste0("volume", kableExtra::footnote_marker_alphabet(2)),
+                             "probability",
+                             paste0("volume", kableExtra::footnote_marker_alphabet(2)),
+                             "probability"), escape = F) %>%
+  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
+                full_width = F) %>%
+  kableExtra::add_header_above(c(" " = 2, "option A" = 2, "option B" = 2)) %>%
+  kableExtra::footnote(alphabet =
+                         c("conditions in experiment 1 and 4 were identical; only conditions for experiment 1 are shown here for brevity; ",
+                           "the volumes (in microliters) shown are for cohorts 1 and 3. In cohort 2 the volumes were 4.8 instead of 4, 9.6 instead of 10, 14.4 instead of 15, and 20.8 instead of 20 microliters; ",
+                           "condition BVP1 in experiment 1 was not repeated in experiment 2, but instead the results from experiment 1 were used in further analyses"), threeparttable = T)
+```
 
 Guidelines can be included for standard research article sections, such as this one. 
 
@@ -324,7 +368,8 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
-(ref:labappfig1) **Some text about the Appendix Fig. 1**. More text after that
+
+(ref:labappfig1) **Difference in discrimination performance between identical conditions in experiment 1 and experiment 4**. Same notation as in in Fig. \@ref(fig:exp1). The sequence of conditions was pseudo-random in each experiment and different for each individual. Negative differences indicate an increase in discrimination performance with experience. Mice were seven weeks old at the beginning of experiment 1 and 13-14 weeks old at the beginning of experiment 4 (a difference of about 7 weeks).  
 
 ```{r appfig1, fig.cap="(ref:labappfig1)"}
 alpha_14 <- 0.05/5
@@ -363,7 +408,7 @@ exp14_diff %>%
 ```
 
 
-(ref:labappfig2) **Some text about the Appendix Fig. 2**. More text after that
+(ref:labappfig2) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 4**. Same notation as in Fig. \@ref(fig:exp1).
 
 ```{r appfig2, fig.cap="(ref:labappfig2)"}
 exp4_simpl <- exp14_simpl %>%
