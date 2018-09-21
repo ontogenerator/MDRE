@@ -47,6 +47,7 @@ library(lubridate)
 library(lme4)
 library(coin)
 library(kableExtra)
+library(Hmisc)
 # library(BayesFactor)
 # library(citr)
 
@@ -102,10 +103,8 @@ exp4 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 4)
 sesoi <- 0.1 # smallest effect size of interest
 ```
 
-Here is where the results are described. Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.  
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.  
+General data quality and quantity overview here. Mention visit numbers, exclusions (if any).
 
-## Some tables and figures
 (ref:labresoverview) **Overview of discrimination performance of all mice in all experiments.** Experiments 1 through 4 are shown in different panels (1-4). Each symbol is the mean discrimination performance of an individual mouse over two presentations of the same condition (original and reversal). The experimental conditions are described in detail in Table \@ref(tab:conds). Data are shown in different colors for three diffierent cohorts of eight mice each (total *N* = 24). Cohort 2 (green symbols and lines) was tested in a different cage set-up than cohorts 1 and 2 (see Methods for details). 
 
 ```{r resoverview, fig.cap="(ref:labresoverview)"}
@@ -139,6 +138,8 @@ grid.arrange(ggexp12_4, ggexp3 + guides(color = FALSE), leg, layout_matrix = lay
              heights = c(1, 1.3, 1))
 ```
 
+Compared to the baselines, in experiment 1 mice improved their discrimination performance in the congruent condition and decreased their performance in the incongruent condition (Fig. \@ref(fig:exp1)). 
+
 (ref:labresexp1) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 1**. Symbols show the individual differences in discrimination performance for the given conditions of each individual mouse (*N* = 24). Mice from different cohorts are shown in different colors. Large blue symbols give the means and the blue vertical lines the 90%-confidence intervals from bootstraps, corrected for multiple comparisons. When the confidence intervals lie completely within the smallest effect size of interest (sesoi) interval bounded by the dashed lines, there is statistical support for equivalence. When the confidence intervals do not cross the zero line, there is statistical support for difference. If the confidence intervals cross the zero line, but are not completely bounded by the sesoi, the results are inconclusive. The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline treatments for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2.
 
 ```{r exp1, fig.cap="(ref:labresexp1)"}
@@ -151,14 +152,14 @@ exp1_simpl <- exp1 %>%
 
 exp1_diff <- exp1_simpl %>%
   spread(cond, performance) %>%
-  mutate("BP-BV" = BP - BV, "BP-C" = BP - C, "BV-C" = BV - C,
-         "BP-I" = BP - 1 + I, "BV-I" = BV - I) %>%
+  mutate("BP - BV" = BP - BV, "C - BP" = C - BP, "C - BV" = C - BV,
+         "I - BP" = 1 - I - BP, "I - BV" = I - BV) %>%
   select(-BV, -BP, -C, -I) %>%
   gather(cond, difference, -cohort, -IdLabel)
 
 n_compare <- exp1_diff %>%
   ungroup() %>%
-  filter(cond != "BP-BV") %>%
+  filter(cond != "BP - BV") %>%
   select(cond) %>%
   unique() %>%
   nrow()
@@ -168,7 +169,7 @@ alpha_2 <- 0.05 / (n_compare - 1) # alpha corrected for multiple comparisons
 
 set.seed(42)
 exp1_diff %>%
-  filter(cond != "BP-BV") %>%
+  filter(cond != "BP - BV") %>%
   ggplot(aes(cond, difference)) +
   geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
   stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
@@ -179,7 +180,7 @@ exp1_diff %>%
 ```
 
 
-(ref:labresexp2) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 2**. Same notation as in Fig. \@ref(fig:exp1). The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline treatments for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2, where the values for condition BVP1 were taken from experiment 1.
+(ref:labresexp2) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 2**. Same notation as in Fig. \@ref(fig:exp1). The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline treatments for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2, where the values for condition BVP1 were taken from experiment 1. The discrimination performance in the incongruent condition was calculated as the relative preference for the higher probability dispenser when comparing to the probability baseline and for the higher volume dispenser when comparing to the volume baseline.
 
 ```{r exp2, fig.cap="(ref:labresexp2)"}
 exp2_simpl <- exp2 %>%
@@ -191,14 +192,14 @@ exp2_simpl <- exp2 %>%
 
 exp2_diff <- exp2_simpl %>%
   spread(cond, performance) %>%
-  mutate("BP-BV" = BP - BV, "BP-C" = BP - C, "BV-C" = BV - C,
-         "BP-I" = BP - 1 + I, "BV-I" = BV - I) %>%
+  mutate("BP - BV" = BP - BV, "C - BP" = C - BP, "C - BV" = C - BV,
+         "I - BP" = 1 - I - BP, "I - BV" = I - BV) %>%
   select(-BV, -BP, -C, -I) %>%
   gather(cond, difference, -cohort, -IdLabel)
 
 set.seed(42)
 exp2_diff %>%
-  filter(cond != "BP-BV") %>%
+  filter(cond != "BP - BV") %>%
   ggplot(aes(cond, difference)) +
   geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
   stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
@@ -206,11 +207,15 @@ exp2_diff %>%
                color = "darkblue", size = 1) +
   theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
   xlab("") + scale_color_viridis_d()
+# 
+# exp2_diff %>%
+#   group_by(cond) %>%
+#   summarise(median = median(difference), lower = , upper = )
 
 ```
 
 
-(ref:labresexp3) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension**. The two choice options always differed along the relevant dimension (either probability or volume, given on the abscissa) at a fixed relative intensity. The discrimination performance for each mouse was measured at four different levels of the background dimension, which was set at the same values on both choice options, but differed from condition to condition  (Table \@ref(tab:conds)). Each symbol is the average for an individual mouse over the two presentations of the same condition (original and reversal). The smallest effect size of interest was determined to be the slope that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. The remaining notation is the same as in Fig. \@ref(fig:exp1). 
+(ref:labresexp3) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension**. The two choice options always differed along the relevant dimension (either probability or volume, given on the abscissa) at a fixed relative intensity. The discrimination performance for each mouse was measured at four different levels of the background dimension, which was set at the same values on both choice options, but differed from condition to condition  (Table \@ref(tab:conds)). Each symbol is the average for an individual mouse over the two presentations of the same condition (original and reversal). The smallest effect size of interest was determined to be the slope that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. The remaining notation is the same as in Fig. \@ref(fig:exp1). The discrimination performance in the incongruent condition was calculated as the relative preference for the higher probability dispenser when comparing to the probability baseline and for the higher volume dispenser when comparing to the volume baseline.
 
 ```{r exp3, fig.cap="(ref:labresexp3)"}
 
@@ -267,18 +272,36 @@ summ_sims <- sims_data %>%
 
 emp_perf <- summaries %>%
   filter(!str_detect(cond, "[r]")) %>%
-  select(IdLabel, experiment, cond, performance)
+  select(IdLabel, cohort, experiment, cond, performance)
 
 devs <- summ_sims %>%
   full_join(emp_perf) %>%
   mutate(deviance = (medperf - performance)^2)
 
-devs <- devs %>%
+rmses <- devs %>%
   group_by(experiment, Choice_type) %>%
   summarise(RMSE = sqrt(mean(deviance, na.rm = TRUE))) %>%
   arrange(experiment, RMSE)
 
-ranks <- devs %>%
+# rmses_inds <- devs %>%
+#   group_by(IdLabel, cohort, Choice_type) %>%
+#   summarise(RMSE = sqrt(mean(deviance))) %>%
+#   filter(!is.na(IdLabel)) %>%
+#   mutate(rank = rank(RMSE)) %>%
+#   arrange(IdLabel, rank)
+# 
+# devs %>%
+#   group_by(cohort, Choice_type) %>%
+#   summarise(RMSE = sqrt(mean(deviance))) %>%
+#   filter(!is.na(cohort)) %>%
+#   mutate(rank = rank(RMSE)) %>%
+#   arrange(cohort, rank)
+# rmses_inds  %>%
+#   group_by(rank, Choice_type) %>%
+#   count() %>%
+#   arrange(rank, desc(n))
+
+ranks <- rmses %>%
   mutate(rank = rank(RMSE)) %>%
   ungroup() %>%
   select(-RMSE) %>%
@@ -369,7 +392,7 @@ Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
 
-(ref:labappfig1) **Difference in discrimination performance between identical conditions in experiment 1 and experiment 4**. Same notation as in in Fig. \@ref(fig:exp1). The sequence of conditions was pseudo-random in each experiment and different for each individual. Negative differences indicate an increase in discrimination performance with experience. Mice were seven weeks old at the beginning of experiment 1 and 13-14 weeks old at the beginning of experiment 4 (a difference of about 7 weeks).  
+(ref:labappfig1) **Difference in discrimination performance between identical conditions in experiment 1 and experiment 4**. Same notation as in in Fig. \@ref(fig:exp1). The sequence of conditions was pseudo-random in each experiment and different for each individual. Negative differences indicate an increase in discrimination performance with time. Mice were seven weeks old at the beginning of experiment 1 and 13-14 weeks old at the beginning of experiment 4 (a difference of about 7 weeks). The discrimination performance in the incongruent condition was calculated as the relative preference for the higher volume dispenser.    
 
 ```{r appfig1, fig.cap="(ref:labappfig1)"}
 alpha_14 <- 0.05/5
@@ -396,7 +419,6 @@ exp14_diff <- exp14_simpl %>%
 
 set.seed(42)
 exp14_diff %>%
-  # filter(cohort != 2) %>%
   ggplot() +
   geom_hline(yintercept = 0.1, linetype = 2) + geom_hline(yintercept = -0.1, linetype = 2) +
   stat_summary(aes(cond, difference, color = NULL), fun.data = mean_cl_boot,
@@ -408,9 +430,9 @@ exp14_diff %>%
 ```
 
 
-(ref:labappfig2) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 4**. Same notation as in Fig. \@ref(fig:exp1).
+(ref:labappexp4) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 4**. Same notation as in Fig. \@ref(fig:exp1). The discrimination performance in the incongruent condition was calculated as the relative preference for the higher probability dispenser when comparing to the probability baseline and for the higher volume dispenser when comparing to the volume baseline.  
 
-```{r appfig2, fig.cap="(ref:labappfig2)"}
+```{r appexp4, fig.cap="(ref:labappexp4)"}
 exp4_simpl <- exp14_simpl %>%
   filter(rep == 2) %>%
   ungroup() %>%
@@ -421,14 +443,14 @@ exp4_simpl <- exp14_simpl %>%
 
 exp4_diff <- exp4_simpl %>%
   spread(cond, performance) %>%
-  mutate("BP-BV" = BP - BV, "BP-C" = BP - C, "BV-C" = BV - C,
-         "BP-I" = BP - 1 + I, "BV-I" = BV - I) %>%
+  mutate("BP - BV" = BP - BV, "C - BP" = C - BP, "C - BV" = C - BV,
+         "I - BP" = 1 - I - BP, "I - BV" = I - BV) %>%
   select(-BV, -BP, -C, -I) %>%
   gather(cond, difference, -cohort, -IdLabel)
 
 set.seed(42)
 exp4_diff %>%
- filter(cond != "BP-BV") %>%
+  filter(cond != "BP - BV") %>%
   ggplot(aes(cond, difference)) +
   geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
   stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
@@ -441,7 +463,7 @@ exp4_diff %>%
 
 
 
-(ref:labsimexp1) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 1**. More text to explain the figure  
+(ref:labsimexp1) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 1**. Columns give the condition names (Table \@ref(tab:conds)) and rows, the model number (Table \@ref(tab:modTable)).  Empirical data from the three cohorts are represented by differently color-filled density curves from the observed discrimination performances. Simulation data are represented by an empty thick-lined density curve. The dashed line gives the median of the empirical data and the dotted line - the median of the simulated data.    
 
 ```{r simexp1, fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp1)"}
 exp1 <- exp1 %>%
@@ -461,7 +483,7 @@ ggplot() +
 
 ```
 
-(ref:labsimexp2) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 2**. More text to explain the figure  
+(ref:labsimexp2) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 2**. Same notation as in Fig. \@ref(fig:simexp1).
 
 ```{r simexp2,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp2)"}
 exp2 <- exp2 %>%
@@ -481,7 +503,7 @@ ggplot() +
 
 ```
 
-(ref:labsimexp3) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 3**. More text to explain the figure 
+(ref:labsimexp3) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 3**. Same notation as in Fig. \@ref(fig:simexp1). 
 
 ```{r simexp3,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp3)"}
 exp3 <- exp3 %>%
@@ -501,7 +523,7 @@ ggplot() +
 
 ```
 
-(ref:labsimexp4) **Comparison of the discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 4**. More text to explain the figure 
+(ref:labsimexp4) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 4**. Same notation as in Fig. \@ref(fig:simexp1). 
 
 ```{r simexp4,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp4)"}
 exp4 <- exp4 %>%
