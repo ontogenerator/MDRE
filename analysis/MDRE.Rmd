@@ -30,11 +30,6 @@ Please provide an abstract of no more than 150 words. Your abstract should expla
 
 # Introduction
 
-Your introduction goes here! Some examples of commonly used commands and features are listed below, to help you get started.
-
-Here is a citation: [@kacelnik_risky_1998]
-An inline citation has no [] around it, like this: @rivalan_principles_2017.
-
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
 # Results
@@ -48,8 +43,7 @@ library(lme4)
 library(coin)
 library(kableExtra)
 library(Hmisc)
-# library(BayesFactor)
-# library(citr)
+library(broom.mixed)
 
 miceChoices <- read.csv2(file = "data/ChoicesOutput.csv", header = TRUE, dec = ".", sep = ";",
                             na.strings = "NA") %>%
@@ -103,24 +97,78 @@ exp4 <- summaries %>% filter(!str_detect(cond, "[r]"), experiment == 4)
 sesoi <- 0.1 # smallest effect size of interest
 ```
 
-General data quality and quantity overview here. Mention visit numbers, exclusions (if any).
+In order to test how (contradicting) information from two different dimensions is integrated and weighed, we performed a series of choice experiments (1-4, in chronological order) with mice in automated group cages [@rivalan_principles_2017]. The cages were outfitted with four computer-controlled liquid dispensers that delivered drinking water as a reward. During each of the 18h-long drinking sessions each mouse had access to all dispensers, but received rewards at only two of them. The two rewarding dispensers differed on one or both reward dimensions, probability and volume [@rivalan_principles_2017]. An overview of the differences between choice options in the different experimental conditions is given in Table \@ref(tab:conds). All experiments were conducted with three different cohorts of eight mice each. Cohort 2 was housed in a different automated group cage than cohorts 1 and 3 (See Animals, Materials, and Methods for differences between cages).
 
-(ref:labresoverview) **Overview of discrimination performance of all mice in all experiments.** Experiments 1 through 4 are shown in different panels (1-4). Each symbol is the mean discrimination performance of an individual mouse over two presentations of the same condition (original and reversal). The experimental conditions are described in detail in Table \@ref(tab:conds). Data are shown in different colors for three diffierent cohorts of eight mice each (total *N* = 24). Cohort 2 (green symbols and lines) was tested in a different cage set-up than cohorts 1 and 2 (see Methods for details). 
+## Experiment 1  
+In the baseline conditions rewards only differed on one dimension (the relevant dimension), but not on the other dimension (the background dimension). For example, in the BVP1 condition (read as baseline for volume at probability 1), both options had the same probability of 0.2, but one option had a volume of 4 $\mu$L and the other, a volume of 20 $\mu$L (Table \@ref(tab:conds)). Based on previous experiments [@rivalan_principles_2017], we expected a baseline difference between 4 $\mu$L and 20 $\mu$L volumes to result in a similar discrimination performance (relative preference for the superior option) compared to a baseline difference between probabilities 0.2 and 0.5. In the C (congruent) condition one option was superior to the other on both dimensions. Finally, in the I (incongruent) condition each of the two options was superior to the other on one of the two reward dimensions. Since the differences on both dimensions were chosen to be comparable, we expected the mean discrimination performance in the incongruent condition to be at chance level (0.5).  
+In experiment 1 and in all subsequent experiments, each mouse had its own individual sequence of conditions, but each condition was followed by a reversal in the next drinking session, with a spatial inversion of the two rewarding dispensers.   
+
+```{r conds}
+conds_tab <- miceChoices %>%
+  ungroup() %>%
+  filter(!str_detect(cond,"[r]"), cohort != 2, between(vol, 1, 20),
+         experiment < 4, prob > 0) %>%
+  select(experiment, cond, vol, prob) %>%
+  distinct() %>%
+  arrange(experiment, cond, vol, prob)
+
+conds_tab <- conds_tab %>%
+  mutate(odd = row_number(cond) %% 2, vol2 = lead(vol), prob2 = lead(prob)) %>%
+  filter(odd == 1) %>%
+  select(-odd)
+
+conds_tab %>%
+  mutate(cond = if_else(cond == "BVP1",
+                       paste0(cond, kableExtra::footnote_marker_alphabet(3)), as.character(cond))) %>%
+  knitr::kable(booktabs = TRUE,
+               caption = "Overview of the experimental conditions in all four experiments.",
+               col.names = c(paste0("experiment", kableExtra::footnote_marker_alphabet(1)),
+                             "condition",
+                             paste0("volume", kableExtra::footnote_marker_alphabet(2)),
+                             "probability",
+                             paste0("volume", kableExtra::footnote_marker_alphabet(2)),
+                             "probability"), escape = F) %>%
+  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
+                full_width = F) %>%
+  kableExtra::add_header_above(c(" " = 2, "option A" = 2, "option B" = 2)) %>%
+  kableExtra::footnote(alphabet =
+                         c("conditions in experiment 1 and 4 were identical; only conditions for experiment 1 are shown here for brevity; ",
+                           "the volumes (in microliters) shown are for cohorts 1 and 3. In cohort 2 the volumes were 4.8 instead of 4, 9.6 instead of 10, 14.4 instead of 15, and 20.8 instead of 20 microliters; ",
+                           "condition BVP1 in experiment 1 was not repeated in experiment 2, but instead the results from experiment 1 were used in further analyses"), threeparttable = T)
+```
+  
+(ref:labresoverview) **Overview of discrimination performance for all mice in all experiments.** Experiments 1 through 4 are shown in different panels (1-4). Each symbol is the mean discrimination performance of an individual mouse over two presentations of the same condition (original and reversal). The experimental conditions are described in detail in Table \@ref(tab:conds). The discrimination performance gives the relative visitation rate of the more profitable option, or, in the incongruent condition, the option with the higher volume. Dashed line gives the chance level of 0.5. Data are shown in different colors for three diffierent cohorts of eight mice each (total *N* = 24). Data from the same individuals are connected with lines. Cohort 2 (green symbols and lines) was tested in a different cage set-up than cohorts 1 and 2 (see Animals, Materials, and Methods for details). 
 
 ```{r resoverview, fig.cap="(ref:labresoverview)"}
 ggexp12_4 <- summaries %>%
   filter(!str_detect(cond, "[r]"), experiment != 3) %>%
-  ggplot(aes(cond, performance, color = cohort, group = IdLabel)) + geom_point() + geom_line() +
+  ggplot() +
+  geom_point(aes(cond, performance, color = cohort, group = IdLabel)) +
+  geom_line(aes(cond, performance, color = cohort, group = IdLabel)) +
   facet_grid(experiment ~ .) + xlab("condition") + ylab("discrimination performance") +
   theme_bw() + scale_color_viridis_d() + guides(color = FALSE) +
-  theme(strip.text.y = element_text(angle = 0))
+  theme(strip.text.y = element_text(angle = 0)) +
+  geom_hline(yintercept = 0.5, linetype = 2)
+  # geom_hline(yintercept = 0.5 + sesoi, linetype = 2) +
+  # geom_hline(yintercept = 0.5 - sesoi, linetype = 2) +
+  # stat_summary(aes(cond, performance), fun.data = mean_cl_boot,
+  #              fun.args = list(conf.int = 1 - 2*(alpha_2)),
+  #              color = "darkblue", size = .5)
 
 ggexp3 <- exp3 %>%
-  ggplot(aes(cond, performance, color = cohort, group = IdLabel)) + geom_point() + geom_line() +
+  ggplot() +
+  geom_point(aes(cond, performance, color = cohort, group = IdLabel)) +
+  geom_line(aes(cond, performance, color = cohort, group = IdLabel)) +
   facet_grid(experiment ~ .) + xlab("condition") +
   scale_y_continuous(name = "", breaks = seq(0, 1, 0.25)) +
   theme_bw() + scale_color_viridis_d() + theme(legend.position = "bottom") +
-  theme(strip.text.y = element_text(angle = 0))
+  theme(strip.text.y = element_text(angle = 0)) +
+  geom_hline(yintercept = 0.5, linetype = 2)
+  # geom_hline(yintercept = 0.5 + sesoi, linetype = 2) +
+  # geom_hline(yintercept = 0.5 - sesoi, linetype = 2) +
+  # stat_summary(aes(cond, performance), fun.data = mean_cl_boot,
+  #              fun.args = list(conf.int = 1 - 2*(alpha_2)),
+  #              color = "darkblue", size = .5)
 
 get_legend <- function(a.gplot){ 
   tmp <- ggplot_gtable(ggplot_build(a.gplot)) 
@@ -138,9 +186,7 @@ grid.arrange(ggexp12_4, ggexp3 + guides(color = FALSE), leg, layout_matrix = lay
              heights = c(1, 1.3, 1))
 ```
 
-Compared to the baselines, in experiment 1 mice improved their discrimination performance in the congruent condition and decreased their performance in the incongruent condition (Fig. \@ref(fig:exp1)). 
-
-(ref:labresexp1) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 1**. Symbols show the individual differences in discrimination performance for the given conditions of each individual mouse (*N* = 24). Mice from different cohorts are shown in different colors. Large blue symbols give the means and the blue vertical lines the 90%-confidence intervals from bootstraps, corrected for multiple comparisons. When the confidence intervals lie completely within the smallest effect size of interest (sesoi) interval bounded by the dashed lines, there is statistical support for equivalence. When the confidence intervals do not cross the zero line, there is statistical support for difference. If the confidence intervals cross the zero line, but are not completely bounded by the sesoi, the results are inconclusive. The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline treatments for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2.
+(ref:labresexp1) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 1**. Symbols show the individual differences in discrimination performance for the given conditions of each individual mouse (*N* = 24). Mice from different cohorts are shown in different colors. Large blue symbols give the means and the blue vertical lines the 90%-confidence intervals from bootstraps, corrected for multiple comparisons. When the confidence intervals lie completely within the smallest effect size of interest (sesoi) interval bounded by the dashed lines, there is statistical support for equivalence. When the confidence intervals do not cross the zero line, there is statistical support for difference. If the confidence intervals cross the zero line, but are not completely bounded by the sesoi, the results are inconclusive. The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline conditions for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2 (Table \@ref(tab:conds)). The discrimination performance in the incongruent condition was calculated as the relative preference for the higher probability dispenser when contrasted with the probability baseline (I - BP) and for the higher volume dispenser when contrasted with the volume baseline (I - BV).     
 
 ```{r exp1, fig.cap="(ref:labresexp1)"}
 exp1_simpl <- exp1 %>%
@@ -155,23 +201,44 @@ exp1_diff <- exp1_simpl %>%
   mutate("BP - BV" = BP - BV, "C - BP" = C - BP, "C - BV" = C - BV,
          "I - BP" = 1 - I - BP, "I - BV" = I - BV) %>%
   select(-BV, -BP, -C, -I) %>%
-  gather(cond, difference, -cohort, -IdLabel)
+  gather(cond, difference, -cohort, -IdLabel) %>%
+  mutate(rel_dim = str_sub(cond, -1))
 
 n_compare <- exp1_diff %>%
   ungroup() %>%
   filter(cond != "BP - BV") %>%
-  select(cond) %>%
+  pull(cond) %>%
   unique() %>%
-  nrow()
+  length()
+
+set.seed(42)
+mean_inc1 <- exp1 %>%
+  filter(cond == "I") %>%
+  pull(performance) %>%
+  mean_cl_boot() %>%
+  mutate_all(round, 3)
+
+
+mean_ibp <- exp1_diff %>%
+  filter(cond == "I - BP") %>%
+  pull(difference) %>%
+  mean_cl_boot() %>%
+  mutate_all(round, 3)
+
+mean_ibv <- exp1_diff %>%
+  filter(cond == "I - BV") %>%
+  pull(difference) %>%
+  mean_cl_boot() %>%
+  mutate_all(round, 3)
 
 alpha_1 <- 0.05
 alpha_2 <- 0.05 / (n_compare - 1) # alpha corrected for multiple comparisons
 
-set.seed(42)
 exp1_diff %>%
   filter(cond != "BP - BV") %>%
   ggplot(aes(cond, difference)) +
-  geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
+  geom_hline(yintercept = sesoi, linetype = 2) +
+  geom_hline(yintercept = -sesoi, linetype = 2) +
   stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
                fun.args = list(conf.int = 1 - 2*(alpha_2)),
                color = "darkblue", size = 1) +
@@ -179,8 +246,11 @@ exp1_diff %>%
   xlab("") + scale_color_viridis_d()
 ```
 
+  
+Compared to the baselines, mice showed an increase in discrimination performance in the congruent condition and a decrease in performance in the incongruent condition (Fig. \@ref(fig:exp1)). Contrary to our expectations, the trade-off between volume and probability did not abolish preference in the incongruent condition (Fig. \@ref(fig:resoverview)). The mean discrimination performance in the incongruent condition was higher than the chance level of 0.5 (lower 95%CI < mean < upper 95%CI, `r paste(mean_inc1$ymin, mean_inc1$y, mean_inc1$ymax, sep = " < ")`). Thus, the volume dimension exerted a stronger influence on choice, at least in absolute terms.  
+ 
 
-(ref:labresexp2) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 2**. Same notation as in Fig. \@ref(fig:exp1). The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline treatments for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2, where the values for condition BVP1 were taken from experiment 1. The discrimination performance in the incongruent condition was calculated as the relative preference for the higher probability dispenser when comparing to the probability baseline and for the higher volume dispenser when comparing to the volume baseline.
+(ref:labresexp2) **Difference between discrimination performance in the baseline conditions and in the congruent and incongruent conditions in experiment 2**. Same notation as in Fig. \@ref(fig:exp1). The discrimination performances in the baseline conditions were calculated from the mean values from the two different baseline conditions for each reward dimension (volume and probability), i.e. BP was the mean of BPV1 and BPV2, and BV was the mean of BVP1 and BVP2, where the values for condition BVP1 were taken from experiment 1 (Table \@ref(tab:conds)). The discrimination performance in the incongruent condition was calculated as the relative preference for the higher probability dispenser when contrasted with the probability baseline (I - BP) and for the higher volume dispenser when contrasted with the volume baseline (I - BV).
 
 ```{r exp2, fig.cap="(ref:labresexp2)"}
 exp2_simpl <- exp2 %>%
@@ -198,24 +268,36 @@ exp2_diff <- exp2_simpl %>%
   gather(cond, difference, -cohort, -IdLabel)
 
 set.seed(42)
+mean_inc2 <- exp2 %>%
+  filter(cond == "I") %>%
+  pull(performance) %>%
+  mean_cl_boot() %>%
+  mutate_all(round, 3)
+
 exp2_diff %>%
   filter(cond != "BP - BV") %>%
   ggplot(aes(cond, difference)) +
   geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
   stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
-               fun.args = list(conf.int = 1 - 2*(alpha_1)),
+               fun.args = list(conf.int = 1 - 2*(alpha_2)),
                color = "darkblue", size = 1) +
   theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
   xlab("") + scale_color_viridis_d()
-# 
-# exp2_diff %>%
-#   group_by(cond) %>%
-#   summarise(median = median(difference), lower = , upper = )
 
 ```
 
+## Experiment 2
+In previous experiments [@rivalan_principles_2017], we had shown that the relative stimulus intensity, i.e. the absolute difference between two options divided by their mean, was a good predictor of discrimination performance for both volume and probability differences. Another finding from these experiments was that, at least initially, mice responded less strongly to  differences in volume than to differences in probability, despite equivalence in return rates [@rivalan_principles_2017]. We tried to correct for this in experiment 1 by selecting options with a higher relative intensity for volume (4 $\mu$L vs. 20 $\mu$L, r.int. = 1.33) than for probability (0.2 vs. 0.5, r.int. = 0.857). In order to test whether we had overcorrected for decreased sensitivity to volume in experiment 1, we performed a slightly modified version, experiment 2, which was the same, but with probability of 1 instead of 0.5 in every choice option (Table \@ref(tab:conds)). Thus, with the two choice options having the same relative intensities (r.int. = 1.33) and being equivalent in return rates, we expected the discrimination performance in the incongruent condition to be at chance level if both dimensions were equally weighed and equally perceived. On the other hand, if mice were less sensitive for volume than for probability differences as in our previous experiments, then the discrimination performance in the incongruent condition should be skewed towards probability (< 0.5).
 
-(ref:labresexp3) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension**. The two choice options always differed along the relevant dimension (either probability or volume, given on the abscissa) at a fixed relative intensity. The discrimination performance for each mouse was measured at four different levels of the background dimension, which was set at the same values on both choice options, but differed from condition to condition  (Table \@ref(tab:conds)). Each symbol is the average for an individual mouse over the two presentations of the same condition (original and reversal). The smallest effect size of interest was determined to be the slope that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. The remaining notation is the same as in Fig. \@ref(fig:exp1). The discrimination performance in the incongruent condition was calculated as the relative preference for the higher probability dispenser when comparing to the probability baseline and for the higher volume dispenser when comparing to the volume baseline.
+In contrast to experiment 1, in experiment 2 mice showed an increase in discrimination performance in the congruent condition only when compared to the volume baseline, but not when compared to the probability baseline (Fig. \@ref(fig:exp2)). As in experiment 1, the discrimination performance in the incongruent condition was lower than in either of the two baselines (Fig. \@ref(fig:exp2)). Although the discrimination performance in the incongruent condition was again different from 0.5 (`r paste(mean_inc2$ymin, mean_inc2$y, mean_inc2$ymax, sep = " < ")`), it was lower than chance, thus skewed towards probability (Fig. \@ref(fig:resoverview)).
+
+
+## Experiment 3
+In the previous experiments we used two different baseline conditions for each dimension (BPV1, BPV2, BVP1, and BVP2, Table \@ref(tab:conds)), in order to exhaust all combinations of reward stimuli and balance the experimental design. But could it be that the level of the background dimension despite being the same across choice options nevertheless affects the discrimination performance on the relevant dimension? Researches have proposed that in multidimensional choice the decision process can be considerably simplified if differences that are (nearly) equal are are not evaluated but ignored [@tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014]. Thus we can predict that regardless of the level of the background dimension, the discrimination performance on the relevant dimension should remain constant. Alternatively, all information from all reward dimensions is used for the calculation of a single value (utility) [@tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014]. Since the utility curve is generally assumed to be decelerating [@kahneman_prospect_1979, but see also @kacelnik_risky_1998], we may expect that as the background dimension increases the subjective difference between the options will decrease and the discrimination performance will also decrease as a result. In order to test whether the two reward dimensions volume and probability interact with each other even when one of them is irrelevant (being the same across choice options), we performed experiment 3.  
+
+The conditions in experiment 3 were chosen to be like the background conditions in the previous experiments, by having one background and one relevant dimension (Table \@ref(tab:conds)). There were four different levels for each background dimension (volume and probability). Each mouse had its own pseudo-random sequence of the eight possible conditions. As in all other experiments, each condition was followed by a reversal. 
+
+(ref:labresexp3) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension**. The two choice options always differed along the relevant dimension (either probability or volume, given on the abscissa) at a fixed relative intensity (rel.int. = 0.86 for probability and 0.67 for volume). The discrimination performance for each mouse was measured at four different levels of the background dimension, which was set at the same values on both choice options during a single drinking session, but differed from condition to condition (Table \@ref(tab:conds)). Each symbol is the average for an individual mouse over the two presentations of the same condition (original and reversal). The smallest effect size of interest was determined to be the slope that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. The remaining notation is the same as in Fig. \@ref(fig:exp1).   
 
 ```{r exp3, fig.cap="(ref:labresexp3)"}
 
@@ -238,24 +320,46 @@ slopes <- slopes %>%
   rename(slope = bg_level) %>%
   inner_join(cohorts)
 
+set.seed(42)
+CIs <- slopes %>%
+  nest(-dimension) %>%
+  mutate(test = map(data, ~ mean_cl_boot(.x$slope, conf.int = 1 - 2*(alpha_1)))) %>%
+  unnest(test) %>%
+  select(-data)
+
+prob_slope <- CIs %>%
+  filter(dimension == "prob") %>%
+  pull(ymin) %>%
+  round(3)
+
+mean_PV1 <- exp3 %>%
+  filter(cond == "PV1") %>%
+  summarise(performance = mean(performance)) %>%
+  pull(performance)
+
+pred_PV4 <- slopes %>%
+  filter(dimension == "prob") %>%
+  summarise(intercept = mean(`(Intercept)`)) + prob_slope
+
 sl_sesoi <- data.frame(val = c(4/20, 20/20),
-                       performance = c(0.8, 0.9))
+                       performance = c(0.5, 0.6))
 
 sl_sesoi <- coef(lm(performance ~ val, data = sl_sesoi))[2]
 
-set.seed(42)
-slopes %>%
-  ggplot(aes(dimension, slope)) +
-  stat_summary(fun.data = mean_cl_boot,
-               fun.args = list(conf.int = 1 - 2*(alpha_1)),
-               color = "darkblue", size = 1) +
-  geom_hline(yintercept = sl_sesoi, linetype = 2) + geom_hline(yintercept = -sl_sesoi, linetype = 2) +
-  theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
+ggplot() +
+  geom_pointrange(data = CIs, aes(x = dimension, y = y, ymin = ymin, ymax = ymax),
+                  color = "darkblue", size = 1) +
+  geom_hline(yintercept = sl_sesoi, linetype = 2) +
+  geom_hline(yintercept = -sl_sesoi, linetype = 2) +
+  theme_bw() +
+  geom_jitter(data = slopes,
+              aes(dimension, slope, color = cohort), alpha = 0.7, width = 0.1) +
   scale_color_viridis_d()
 
 ```
-
-The relative intensities for the two dimensions were the same in cohorts 1,3 (rint = 0.86), but different in cohort 2 (rintp = 0.86, rintv = 0.67).
+  
+In experiment 3 the slope estimate over the different conditions was equivalent to zero for the volume dimension, but not for the probability dimension (Fig. \@ref(fig:resoverview), Fig. \@ref(fig:exp3)). In the probability dimension the lower confidence interval for the slope estimate was `r round(prob_slope, 3)`, just outside of the sesoi (`r -sl_sesoi`), indicating a significantly negative slope. To help illustrate the effect size, let us first consider that the typical mouse has a relative preference of `r round(mean_PV1, 3)` for probability 0.5 over probability 0.2 (both giving 4 $\mu$L rewards). With the estimated slope the predicted performance for the same probabilities but both at 20 $\mu$L is `r round(pred_PV4, 3)`.
+<!-- The relative intensities for the two dimensions were the same in cohorts 1,3 (rint = 0.86), but different in cohort 2 (rintp = 0.86, rintv = 0.67). -->
 
 ```{r}
 
@@ -307,12 +411,16 @@ ranks <- rmses %>%
   select(-RMSE) %>%
   spread(experiment, Choice_type) 
 ```
+## Experiment 4
 
-Compared to the empirical data, models 2 and 7 performed best (Table \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)).
+
+## Model comparison
+
+Compared to the empirical data, models 2 and 7 performed best (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)).
 
 ```{r modTable}
 data.frame(model = 1:7,
-           description = c("product rule", "random dimension",
+           description = c("hurdle", "random dimension",
                            "winner takes it all", "probability first",
                            "volume first", "only volume",
                            "logproduct rule")) %>%
@@ -335,45 +443,16 @@ ranks %>%
 # Discussion
 
 The effect of the background level of probability on volume in Experiment 3 was only present if the probability of 0.2 was included, otherwise discrimination performance was unaffected by probability.
+
+## Difference between cohorts
+
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Cras sit amet mauris in ex ultricies elementum vel rutrum dolor. Phasellus tempor convallis dui, in hendrerit mauris placerat scelerisque. Maecenas a accumsan enim, a maximus velit. Pellentesque in risus eget est faucibus convallis nec at nulla. Phasellus nec lacinia justo. Morbi fermentum, orci id varius accumsan, nibh neque porttitor ipsum, consectetur luctus risus arcu ac ex. Aenean a luctus augue. Suspendisse et auctor nisl. Suspendisse cursus ultrices quam non vulputate. Phasellus et pharetra neque, vel feugiat erat. Sed feugiat elit at mauris commodo consequat. Sed congue lectus id mattis hendrerit. Mauris turpis nisl, congue eget velit sed, imperdiet convallis magna. Nam accumsan urna risus, non feugiat odio vehicula eget.
 
-# Methods and Materials
+# Animals, Methods, and Materials
 
 The different experimental conditions for all animals and cohorts are listed in Table \@ref(tab:conds).
 
-```{r conds}
-conds_tab <- miceChoices %>%
-  ungroup() %>%
-  filter(!str_detect(cond,"[r]"), cohort != 2, between(vol, 1, 20),
-         experiment < 4, prob > 0) %>%
-  select(experiment, cond, vol, prob) %>%
-  distinct() %>%
-  arrange(experiment, cond, vol, prob)
 
-conds_tab <- conds_tab %>%
-  mutate(odd = row_number(cond) %% 2, vol2 = lead(vol), prob2 = lead(prob)) %>%
-  filter(odd == 1) %>%
-  select(-odd)
-
-conds_tab %>%
-  mutate(cond = if_else(cond == "BVP1",
-                       paste0(cond, kableExtra::footnote_marker_alphabet(3)), as.character(cond))) %>%
-  knitr::kable(booktabs = TRUE,
-               caption = "Overview of the experimental conditions in all four experiments.",
-               col.names = c(paste0("experiment", kableExtra::footnote_marker_alphabet(1)),
-                             "condition",
-                             paste0("volume", kableExtra::footnote_marker_alphabet(2)),
-                             "probability",
-                             paste0("volume", kableExtra::footnote_marker_alphabet(2)),
-                             "probability"), escape = F) %>%
-  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
-                full_width = F) %>%
-  kableExtra::add_header_above(c(" " = 2, "option A" = 2, "option B" = 2)) %>%
-  kableExtra::footnote(alphabet =
-                         c("conditions in experiment 1 and 4 were identical; only conditions for experiment 1 are shown here for brevity; ",
-                           "the volumes (in microliters) shown are for cohorts 1 and 3. In cohort 2 the volumes were 4.8 instead of 4, 9.6 instead of 10, 14.4 instead of 15, and 20.8 instead of 20 microliters; ",
-                           "condition BVP1 in experiment 1 was not repeated in experiment 2, but instead the results from experiment 1 were used in further analyses"), threeparttable = T)
-```
 
 Guidelines can be included for standard research article sections, such as this one. 
 
@@ -454,7 +533,7 @@ exp4_diff %>%
   ggplot(aes(cond, difference)) +
   geom_hline(yintercept = sesoi, linetype = 2) + geom_hline(yintercept = -sesoi, linetype = 2) +
   stat_summary(aes(cond, difference), fun.data = mean_cl_boot,
-               fun.args = list(conf.int = 1 - 2*(alpha_1)),
+               fun.args = list(conf.int = 1 - 2*(alpha_2)),
                color = "darkblue", size = 1) +
   theme_bw() + geom_jitter(aes(color = cohort), alpha = 0.7, width = 0.1) +
   xlab("") + scale_color_viridis_d()
@@ -463,7 +542,7 @@ exp4_diff %>%
 
 
 
-(ref:labsimexp1) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 1**. Columns give the condition names (Table \@ref(tab:conds)) and rows, the model number (Table \@ref(tab:modTable)).  Empirical data from the three cohorts are represented by differently color-filled density curves from the observed discrimination performances. Simulation data are represented by an empty thick-lined density curve. The dashed line gives the median of the empirical data and the dotted line - the median of the simulated data.    
+(ref:labsimexp1) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 1**. Columns give the condition names (Table \@ref(tab:conds)) and rows, the model number (Table \@ref(tab:modTable)).  Empirical data from the three cohorts are represented by differently color-filled density curves from the observed discrimination performances. Simulation data are represented by an empty thick-lined density curve. The dashed line gives the median of the empirical data and the dotted line - the median of the simulated data. The discrimination performance gives the relative visitation rate of the more profitable option, or, in the incongruent condition, the option with the higher volume.  
 
 ```{r simexp1, fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp1)"}
 exp1 <- exp1 %>%
