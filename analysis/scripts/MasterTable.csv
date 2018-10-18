@@ -113,7 +113,7 @@ day;path;comments
 110;data/raw/AGC2VolProbDiscrim-15.11.03.csv;
 111;data/raw/AGC2VolProbDiscrim-15.11.04.csv;
 112;data/raw/VolProbDiscrimExplore-15.10.11.csv;
-113;data/raw/VolProbDiscrimExplore-15.10.12.csv;altered training procedure by including 
+113;data/raw/VolProbDiscrimExplore-15.10.12.csv;altered training procedure by including an extra valve clicking phase
 114;data/raw/VolProbDiscrim-15.10.13.csv;
 115;data/raw/VolProbDiscrim-15.10.14.csv;
 116;data/raw/VolProbDiscrim-15.10.15.csv;

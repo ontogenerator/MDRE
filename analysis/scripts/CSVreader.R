@@ -78,7 +78,7 @@ if (ndays > 0) {
       slice(firstrow:lastrow)
 
     #make a day column with the day number
-    nthday$day <- daypathlist[i,1]
+    nthday$day <- daypathlist[i, 1]
 
     #aggregate data from all days in one table
     if (i > 1) {
