@@ -461,7 +461,17 @@ exp4_diff %>%
 
 Rather than fitting models to the observed data we took a "learning by building" approach by generating data from different decision models and comparing the resulting posterior distributions of discrimination performances to the observed distribitions of the mice in our experiments. For quantifying the differences between the distributions, we calculated the root-mean-square-deviations (RMSD) from the medians to the individual discrimination performances of each mouse in each condition of each experiment. We could then rank model performance by the RMSD scores.
 
-The models we considered were implemented using a recursive Bayesian learning model [@foley_sure_2017]. We first fitted the models to two baseline conditions in experiment 1 (BPV2 and BVP2), in order to select values for the free parameters. We then used these values for the remaining conditions in all experiments.
+The models we considered were different implementations of the same recursive Bayesian learning model [@foley_sure_2017]. We first fitted the models to two baseline conditions in experiment 1 (BPV2 and BVP2), in order to select values for the free parameters. We then used these values for the remaining conditions in all experiments.
+The models that we implemented differed in the memory of events that were tracked and the decision mechanism. These models were:
+
+1. Hurdle model  
+2. Random dimension model  
+3. Winner-takes-it-all model  
+4. Probability first model  
+5. Volume first model  
+6. Volume only model  
+7. Logproduct rule model  
+
 
 ```{r}
 
@@ -489,29 +499,25 @@ rmsds <- devs %>%
   summarise(RMSD = sqrt(mean(deviance, na.rm = TRUE))) %>%
   arrange(experiment, RMSD)
 
-# rmses_inds <- devs %>%
-#   group_by(IdLabel, cohort, Choice_type) %>%
-#   summarise(RMSE = sqrt(mean(deviance))) %>%
-#   filter(!is.na(IdLabel)) %>%
-#   mutate(rank = rank(RMSE)) %>%
-#   arrange(IdLabel, rank)
-# 
-# devs %>%
-#   group_by(cohort, Choice_type) %>%
-#   summarise(RMSD = sqrt(mean(deviance))) %>%
-#   filter(!is.na(cohort)) %>%
-#   mutate(rank = rank(RMSD)) %>%
-#   arrange(cohort, rank)
-# rmses_inds  %>%
-#   group_by(rank, Choice_type) %>%
-#   count() %>%
-#   arrange(rank, desc(n))
-
 ranks <- rmsds %>%
   mutate(rank = rank(RMSD)) %>%
   ungroup() %>%
   select(-RMSD) %>%
   spread(experiment, Choice_type) 
+
+
+rmsds_nocoh2 <- devs %>%
+  filter(cohort != 2) %>%
+  group_by(experiment, Choice_type) %>%
+  summarise(RMSD = sqrt(mean(deviance, na.rm = TRUE))) %>%
+  arrange(experiment, RMSD)
+
+ranks_nocoh2 <- rmsds_nocoh2 %>%
+  mutate(rank = rank(RMSD)) %>%
+  ungroup() %>%
+  select(-RMSD) %>%
+  spread(experiment, Choice_type) 
+
 ```
 
 
@@ -530,7 +536,7 @@ data.frame(model = 1:7,
 ```
 
 ```{r simRankTable}
-ranks %>%
+ranks_nocoh2 %>%
   knitr::kable(booktabs = TRUE,
                caption = "Best performing models ranked by root-mean-square-deviations (RMSD).") %>%
   kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
