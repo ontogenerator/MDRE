@@ -457,7 +457,7 @@ exp4_diff %>%
 ```
 
 
-## Recursive Bayesian learning models
+## Recursive Bayesian learning models (or simplify considerably without trial-by-trial analysis)
 
 Rather than fitting models to the observed data we took a "learning by building" approach by generating data from different decision models and comparing the resulting posterior distributions of discrimination performances to the observed distribitions of the mice in our experiments. For quantifying the differences between the distributions, we calculated the root-mean-square-deviations (RMSD) from the medians to the individual discrimination performances of each mouse in each condition of each experiment. We could then rank model performance by the RMSD scores.
 
@@ -473,7 +473,73 @@ The models that we implemented differed in the memory of events that were tracke
 7. Logproduct rule model  
 
 
-```{r}
+```{r message = FALSE, warning = FALSE}
+
+#### cv baseline fit for prob and later out of sample test approach 
+cv_fit <- function(phys1, phys2, cv, lapse) {
+  (1 - lapse) * pnorm(0, mean = phys1 - phys2, sd = cv*(phys1 + phys2), lower.tail = FALSE) + lapse * 0.5
+}
+
+se <- function(x) sqrt(var(x)/length(x)) # function for calculating the standard error
+
+baselines <- summaries %>%
+  filter(str_detect(cond, "BP"), experiment %in% c(1, 2)) %>%
+  mutate(phys1 = ifelse(experiment == 2, 1, 0.5),
+         phys2 = 0.2) %>%
+  group_by(IdLabel) %>%
+  mutate(lapse = mean(sampling) * 2)
+
+cvs <-  baselines %>%
+  nest(-IdLabel) %>%
+  mutate(test = map(data, ~ coef(nls(performance ~ cv_fit(phys1, phys2, cv, lapse = lapse), 
+                                weights = Nrel,
+                                start = c(cv = 0.5),
+                                lower = c(cv = 0),
+                                upper = c(cv = 5),
+                                data = .x,
+                                algorithm = "port",
+                                # trace = T, 
+                                control = list(maxiter = 5000))))) %>%
+  unnest(test) %>%
+  unnest(data) %>%
+  group_by(IdLabel, cohort, lapse) %>%
+  summarise(cv = mean(test))
+ 
+ 
+mean_cvs <- cvs %>%
+  group_by(cohort != 2) %>%
+  summarise_at(vars(cv, lapse), funs(mean, se))
+
+
+
+baselines_vol <- summaries %>%
+  filter(str_detect(cond, "BV"), experiment %in% c(1, 2)) %>%
+  mutate(phys1 = 20,
+         phys2 = 4) %>%
+  group_by(IdLabel) %>%
+  mutate(lapse = mean(sampling) * 2)
+
+cvs_vol <-  baselines_vol %>%
+  nest(-IdLabel) %>%
+  mutate(test = map(data, ~ coef(nls(performance ~ cv_fit(phys1, phys2, cv, lapse = lapse), 
+                                weights = Nrel,
+                                start = c(cv = 0.5),
+                                lower = c(cv = 0),
+                                upper = c(cv = 5),
+                                data = .x,
+                                algorithm = "port",
+                                # trace = T, 
+                                control = list(maxiter = 5000))))) %>%
+  unnest(test) %>%
+  unnest(data) %>%
+  group_by(IdLabel, cohort, lapse) %>%
+  summarise(cv = mean(test))
+ 
+mean_cvs_vol <- cvs_vol %>%
+  group_by(cohort != 2) %>%
+  summarise_at(vars(cv, lapse), funs(mean, se))
+
+
 
 sims_data <- map(list("data/summ_Exp1.csv", "data/summ_Exp2.csv",
                        "data/summ_Exp3.csv", "data/summ_Exp1.csv"),
@@ -491,6 +557,7 @@ emp_perf <- summaries %>%
   select(IdLabel, cohort, experiment, cond, performance)
 
 devs <- summ_sims %>%
+  # filter(Choice_type != 7) %>%
   full_join(emp_perf) %>%
   mutate(deviance = (medperf - performance)^2)
 
@@ -516,8 +583,7 @@ ranks_nocoh2 <- rmsds_nocoh2 %>%
   mutate(rank = rank(RMSD)) %>%
   ungroup() %>%
   select(-RMSD) %>%
-  spread(experiment, Choice_type) 
-
+  spread(experiment, Choice_type)
 ```
 
 
@@ -580,6 +646,7 @@ exp1 <- exp1 %>%
   group_by(cond) %>%
   mutate(medperf = median(performance))
 
+
 ggplot() +
   geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 1)) +
   facet_grid(Choice_type ~ cond) +
@@ -587,6 +654,7 @@ ggplot() +
   theme_bw() + scale_fill_viridis_d() +
   scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
   geom_vline(aes(xintercept = medperf), linetype = 2, data = exp1) +
+  geom_vline(xintercept = cv_fit(0.5, 0.2, cv = 0.7, lapse = 0.1), linetype = 1) +
   geom_vline(aes(xintercept = medperf), linetype = 3, size = 1.2, data = summ_sims %>%
                filter(experiment == 1)) +
   labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))

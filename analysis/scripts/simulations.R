@@ -31,9 +31,34 @@ Which_vol <- function(OldPostMean1, OldPostMean2, OldPostVar1, OldPostVar2){
         return(2)
     }
 }
+
+vols <- c(1, 1)
+probs <- c(0.5, 0.2)
+
+vols <- Memory$OldPostMean
+probs <- Memory$OldPr
+Which_val(vols, probs)
+
+Which_val <- function(vols, probs, cv = 0.7) {
+
+  # p <- runif(1, 0, 1)
+  n_options <- length(vols)
+  #
+  # if (p < lapse) return(sample(1:n_options, 1) - 1)
+
+
+  vals <- vols * probs
+  vals <- rnorm(vals, mean = vals, sd = cv * abs(vals))
+  res <- which(vals == max(vals))
+
+  if (length(res) > 1) return(sample(1:n_options, 1))
+  return(res)
+
+}
+
 pnorm(0, mean = 0, sd = sqrt(0), lower.tail = FALSE)
 cv <- 0.7
-means <- c(0.3, 0.3, 0.3, 2, 0.2, 0.2)
+means <- c(20, 50, 100, 0.2, 0.2, 0.2)
 sds <- (cv*means)
 dims <- c("v","v","v","p","p","p")
 
@@ -43,6 +68,10 @@ dims <- c("v","v","p","p")
 
 Which_lgr(means, sds, dims, "p")
 Which_log(means, dims)
+
+
+
+Which_product(means, sds, dims)
 
 # comm_mean <- 5/20*0.5
 # common <- rnorm(1000, mean = comm_mean, sd = cv*comm_mean)
@@ -70,8 +99,7 @@ Which_product <- function(means, sds, dims){
 
 }
 
-
-Which_log <- function(means, dims){
+Which_log <- function(means, dims, cv){
 
   if (!all((unique(dims)) %in% c("v", "p"))) stop("Dimensions (dims) must be of type 'v' and 'p'")
 
@@ -139,7 +167,7 @@ Which_WTA <- function(means, sds, dims){
   return(which.is.max(values$val))
 }
 
-Which_lxgr <- function(means, sds, dims, dim, threshold=0.7){
+Which_lxgr <- function(means, sds, dims, dim, threshold = 0.7){
   #lexicographic rule with one dimension checked first, then if it is not informative, check the other
   if (!all((unique(dims)) %in% c("v", "p"))) stop("Dimensions (dims) must be of type 'v' and 'p'")
 
@@ -193,7 +221,7 @@ voldispense_list <- function(prob, vol, i){
 
 
 voldispense_prob <- function(prob, vol){
-  p <- runif(1,0,1)
+  p <- runif(1, 0, 1)
   if (p > prob) {
     return(0)
   }else{
@@ -245,13 +273,15 @@ beeYourself <- function(i, recordAFrame, Env, Regime, Choice, MuVar){
                                      c("v", "v", "p", "p"), "v"), #vol first
                     `6` = Which_vol(Memory$OldPostMean[1],Memory$OldPostMean[2],
                                     Memory$OldPostVar[1], Memory$OldPostVar[2]), #vol only,
-                    #retreival without scalar property
-                    `7` = Which_log(c(Memory$OldPostMean, Memory$OldPr),
-                                    c("v", "v", "p", "p")) #logproduct rule
+                    # #retreival without scalar property
+                    # `7` = Which_log(c(Memory$OldPostMean, Memory$OldPr),
+                    #                 c("v", "v", "p", "p"), cv) #logproduct rule
+                    #                                     #retreival without scalar property
+                    `7` = Which_val(Memory$OldPostMean, Memory$OldPr, cv) #valproduct rule
                     )
 
     if (i > 1) {
-      recordAFrame[(i), "CumVisTo1"] <- recordAFrame[(i - 1),"CumVisTo1"] + 2 - Which
+      recordAFrame[(i), "CumVisTo1"] <- recordAFrame[(i - 1), "CumVisTo1"] + 2 - Which
     }else{
       recordAFrame[(i), "CumVisTo1"] <- 2 - Which
     }
@@ -357,12 +387,13 @@ makeRecords <- function(NoIts, block){
     )
     return(recordAFrame)
 }
+paramset <- 1
 
 RunBeeSim <- function(conditions, paramset){
     # set parameters, from the data frame of possible conditions
     # then runs a simulation from those parameters.
-    NoIts <- conditions[paramset,"NoIts"]
-    block <- conditions[paramset,"block"]
+    NoIts <- conditions[paramset, "NoIts"]
+    block <- conditions[paramset, "block"]
 
     recordAFrame <- makeRecords(NoIts, block)
 
@@ -408,27 +439,61 @@ sigmaprob <-  1
 u2 <- 0.008 #asymptote level, the smaller, the smaller the "lapse rate"
 sigma2 <- 5 #learning rate for vol, the smaller, the faster the learning
 pvar <- 5 #learning rate for prob, the smaller, the faster the learning
-cv <-  0.6 # coefficient of variation
+cv <-  0.7 # coefficient of variation
 
 nreps <- 100 # number of individuals
 ntrials <- 240
 
+# n_models <- 7
 
-#### experiment 1 of MDRE
-conditions <- data.frame("paramset" = c(1:42),
-                         "prob1" = rep(c(0.2, 0.5, 0.5, 0.5, 0.5, 0.2),7),
-                         "prob2" = rep(c(0.2, 0.5, 0.2, 0.2, 0.2, 0.5),7),
+#3 exps MDRE
+#
+conditions <- data.frame("paramset" = 1:20,
+                         "prob1" = c(c(0.5, 0.5, 0.2, 0.5, 0.5, 0.2),
+                                     c(1, 1, 0.2, 1, 1, 0.2),
+                                     c(0.5, 0.5, 0.5, 0.5, 0.2, 0.5, 0.7, 0.8)),
+                         "prob2" = c(c(0.2, 0.2, 0.2, 0.5, 0.2, 0.5),
+                                     c(0.2, 0.2, 0.2, 1, 0.2, 1),
+                                     c(0.2, 0.2, 0.2, 0.2, 0.2, 0.5, 0.7, 0.8)),
                          "p1Var" = pvar, "p2Var" = pvar,
-                         "Environ1Mu" = rep(c(1, 1, 0.2, 1, 1, 1),7),
-                         "Environ2Mu" = rep(c(0.2, 0.2, 0.2, 1, 0.2, 0.2),7),
-                         "vol1Var" = sigma2, "vol2Var" = sigma2,"Regime" = 3,
-                         "Choice_type" = rep(1:7, each = 6),
+                         "Environ1Mu" = c(c(0.2, 1, 1, 1, 1, 1),
+                                          c(0.2, 1, 1, 1, 1, 1),
+                                          c(0.2, 0.5, 0.75, 1, 1, 1, 1, 1)),
+                         "Environ2Mu" = c(c(0.2, 1, 0.2, 0.2, 0.2, 0.2),
+                                          c(0.2, 1, 0.2, 0.2, 0.2, 0.2),
+                                          c(0.2, 0.5, 0.75, 1, 0.2, 0.2, 0.2, 0.2)),
+                         "cond" = c(rep(c("BPV1", "BPV2", "BVP1", "BVP2", "C", "I"), 2),
+                                    c("PV1", "PV2", "PV3", "PV4", "VP1", "VP2", "VP3", "VP4")),
+                         "experiment" = c(rep(1:3, each = 6), 3, 3),
+                         "vol1Var" = sigma2, "vol2Var" = sigma2, "Regime" = 3,
+                         "Choice_type" = 7,
                          "MuVar" = u2,
                          "OldPostMean1" =  0,
                          "OldPostMean2" = 0,
                          "OldPostVar1" = sigmavol,"OldPostVar2" = sigmavol,
                          "pPostVar1" = sigmaprob, "pPostVar2" = sigmaprob,
                          "NoIts" = ntrials, "block" = 30, stringsAsFactors = F)
+
+
+#### experiment 1 of MDRE
+# conditions <- data.frame("paramset" = 1:(n_models*6),
+#                          "prob1" = rep(c(0.2, 0.5, 0.5, 0.5, 0.5, 0.2),
+#                                        n_models),
+#                          "prob2" = rep(c(0.2, 0.5, 0.2, 0.2, 0.2, 0.5),
+#                                        n_models),
+#                          "p1Var" = pvar, "p2Var" = pvar,
+#                          "Environ1Mu" = rep(c(1, 1, 0.2, 1, 1, 1),
+#                                             n_models),
+#                          "Environ2Mu" = rep(c(0.2, 0.2, 0.2, 1, 0.2, 0.2),
+#                                             n_models),
+#                          "vol1Var" = sigma2, "vol2Var" = sigma2, "Regime" = 3,
+#                          "Choice_type" = rep(1:n_models, each = 6),
+#                          "MuVar" = u2,
+#                          "OldPostMean1" =  0,
+#                          "OldPostMean2" = 0,
+#                          "OldPostVar1" = sigmavol,"OldPostVar2" = sigmavol,
+#                          "pPostVar1" = sigmaprob, "pPostVar2" = sigmaprob,
+#                          "NoIts" = ntrials, "block" = 30, stringsAsFactors = F)
 
 #### experiment 2 of MDRE
 # conditions <- data.frame("paramset" = c(1:42),
@@ -524,33 +589,51 @@ aggResults <- aggResults %>%
   group_by(pset, nrep, recordBlock) %>%
   mutate(performance = mean(VisitsTo1))
 
-cond_names <- tibble(num_code = 1:6,  cond = factor(c("BVP1", "BVP2", "BPV1", "BPV2", "C", "I"),
-levels = c("BVP1", "BVP2", "BPV1", "BPV2", "C", "I")))
+aggResults
 
-cond_names_exp3 <- tibble(num_code = 1:8,
-                      cond = factor(c("VP1", "VP2", "VP3", "VP4", "PV1", "PV2", "PV3", "PV4")))
+# cond_names <- tibble(num_code = 1:6,  cond = factor(c("BVP1", "BVP2", "BPV1", "BPV2", "C", "I"),
+# levels = c("BVP1", "BVP2", "BPV1", "BPV2", "C", "I")))
+#
+# cond_names_exp3 <- tibble(num_code = 1:8,
+#                       cond = factor(c("VP1", "VP2", "VP3", "VP4", "PV1", "PV2", "PV3", "PV4")))
+#
+# cond_tab <- conditions %>%
+#   select(paramset, Choice_type) %>%
+#   rename(pset = paramset) %>%
+#   group_by(Choice_type) %>%
+#   mutate(num_code = 1:n())
+#
+#
+# cond_tab <- cond_tab %>%
+#   left_join(cond_names_exp3) %>%
+#   select(-num_code)
+#
+# # only take last 60 visits from 240
+# summaries <- aggResults %>%
+#   filter(recordBlock > 179) %>%
+#   inner_join(cond_tab) %>%
+#   group_by(pset, nrep, Choice_type, cond_names) %>%
+#   summarise(performance = mean(performance))
+
 
 cond_tab <- conditions %>%
-  select(paramset, Choice_type) %>%
-  rename(pset = paramset) %>%
-  group_by(Choice_type) %>%
-  mutate(num_code = 1:n())
+  select(experiment, cond, pset = paramset)
 
-
-cond_tab <- cond_tab %>%
-  left_join(cond_names_exp3) %>%
-  select(-num_code)
-
-# only take last 60 visits from 240
-summaries <- aggResults %>%
+agg_summs <- aggResults %>%
   filter(recordBlock > 179) %>%
   inner_join(cond_tab) %>%
-  group_by(pset, nrep, Choice_type, cond_names) %>%
+  mutate(Choice_type = 7) %>%
+  group_by(pset, nrep, Choice_type, cond, experiment) %>%
   summarise(performance = mean(performance))
 
-#model1
-cv
+sims_data <- sims_data %>% filter(Choice_type != 7) %>% bind_rows(agg_summs)
 
+sims_data <- sims_data %>% filter(experiment == 1) %>% mutate(experiment = 4) %>%
+  bind_rows(sims_data)
+
+write.table(aggResults, file = "results1.csv", sep = ";", row.names = FALSE)
+
+write.table(summaries, file = "summ1.csv", sep = ";", row.names = FALSE)
 
 # summaries <- summaries %>% mutate(performance = if_else(cond_names == "I", 1 - performance,
 #                                                         performance))
@@ -558,7 +641,7 @@ cv
 # summaries <- summaries %>% ungroup() %>%
 #   mutate(Choice_type = factor(Choice_type))
 
-# write.table(summaries, file = "summ_Exp1.csv", sep=";", row.names=FALSE)
+#
 
 
 # summaries %>%
