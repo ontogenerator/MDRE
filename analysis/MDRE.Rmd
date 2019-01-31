@@ -498,7 +498,6 @@ cvs <-  baselines %>%
                                 upper = c(cv = 5),
                                 data = .x,
                                 algorithm = "port",
-                                # trace = T, 
                                 control = list(maxiter = 5000))))) %>%
   unnest(test) %>%
   unnest(data) %>%
@@ -528,7 +527,6 @@ cvs_vol <-  baselines_vol %>%
                                 upper = c(cv = 5),
                                 data = .x,
                                 algorithm = "port",
-                                # trace = T, 
                                 control = list(maxiter = 5000))))) %>%
   unnest(test) %>%
   unnest(data) %>%
@@ -540,29 +538,30 @@ mean_cvs_vol <- cvs_vol %>%
   summarise_at(vars(cv, lapse), funs(mean, se))
 
 
+sims_data <- read.csv2(file = "data/simulations.csv",
+                        header = TRUE, dec = ".", sep = ";", na.strings = "NA")
 
-sims_data <- map(list("data/summ_Exp1.csv", "data/summ_Exp2.csv",
-                       "data/summ_Exp3.csv", "data/summ_Exp1.csv"),
-                     ~ read.csv2(file = ., header = TRUE, dec = ".", sep = ";",
-                                na.strings = "NA")) %>%
-  map2_df(1:4, ~update_list(.x, experiment = .y))
-  
 summ_sims <- sims_data %>%
-  group_by(experiment, Choice_type, cond) %>%
+  group_by(experiment, cond, model) %>%
   summarise(medperf = median(performance))
 
+summ_sims <- summ_sims %>%
+  filter(experiment == 1) %>%
+  ungroup() %>%
+  mutate(experiment = 4) %>%
+  bind_rows(summ_sims) %>%
+  arrange(experiment, cond, model)
 
 emp_perf <- summaries %>%
   filter(!str_detect(cond, "[r]")) %>%
   select(IdLabel, cohort, experiment, cond, performance)
 
 devs <- summ_sims %>%
-  # filter(Choice_type != 7) %>%
   full_join(emp_perf) %>%
   mutate(deviance = (medperf - performance)^2)
 
 rmsds <- devs %>%
-  group_by(experiment, Choice_type) %>%
+  group_by(experiment, model) %>%
   summarise(RMSD = sqrt(mean(deviance, na.rm = TRUE))) %>%
   arrange(experiment, RMSD)
 
@@ -570,12 +569,12 @@ ranks <- rmsds %>%
   mutate(rank = rank(RMSD)) %>%
   ungroup() %>%
   select(-RMSD) %>%
-  spread(experiment, Choice_type) 
+  spread(experiment, model) 
 
 
 rmsds_nocoh2 <- devs %>%
   filter(cohort != 2) %>%
-  group_by(experiment, Choice_type) %>%
+  group_by(experiment, model) %>%
   summarise(RMSD = sqrt(mean(deviance, na.rm = TRUE))) %>%
   arrange(experiment, RMSD)
 
@@ -583,7 +582,7 @@ ranks_nocoh2 <- rmsds_nocoh2 %>%
   mutate(rank = rank(RMSD)) %>%
   ungroup() %>%
   select(-RMSD) %>%
-  spread(experiment, Choice_type)
+  spread(experiment, model)
 ```
 
 
@@ -591,18 +590,17 @@ ranks_nocoh2 <- rmsds_nocoh2 %>%
 Compared to the empirical data, models 2 and 7 performed best (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)).
 
 ```{r modTable}
-data.frame(model = 1:7,
+data.frame(model = 1:6,
            description = c("hurdle", "random dimension",
                            "winner takes it all", "probability first",
-                           "volume first", "only volume",
-                           "logproduct rule")) %>%
+                           "volume first", "scalar expected value")) %>%
   knitr::kable(booktabs = TRUE, caption = "Decision-making models") %>%
   kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
                 full_width = F)
 ```
 
 ```{r simRankTable}
-ranks_nocoh2 %>%
+ranks %>%
   knitr::kable(booktabs = TRUE,
                caption = "Best performing models ranked by root-mean-square-deviations (RMSD).") %>%
   kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
@@ -649,12 +647,12 @@ exp1 <- exp1 %>%
 
 ggplot() +
   geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 1)) +
-  facet_grid(Choice_type ~ cond) +
+  facet_grid(model ~ cond) +
   geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp1) +
   theme_bw() + scale_fill_viridis_d() +
   scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
   geom_vline(aes(xintercept = medperf), linetype = 2, data = exp1) +
-  geom_vline(xintercept = cv_fit(0.5, 0.2, cv = 0.7, lapse = 0.1), linetype = 1) +
+  # geom_vline(xintercept = cv_fit(0.5, 0.2, cv = 0.7, lapse = 0.1), linetype = 1) +
   geom_vline(aes(xintercept = medperf), linetype = 3, size = 1.2, data = summ_sims %>%
                filter(experiment == 1)) +
   labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
@@ -670,7 +668,7 @@ exp2 <- exp2 %>%
 
 ggplot() +
   geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 2)) +
-  facet_grid(Choice_type ~ cond) +
+  facet_grid(model ~ cond) +
   geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp2) +
   theme_bw() + scale_fill_viridis_d() +
   scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
@@ -690,7 +688,7 @@ exp3 <- exp3 %>%
 
 ggplot() +
   geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 3)) +
-  facet_grid(Choice_type ~ cond) +
+  facet_grid(model ~ cond) +
   geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp3) +
   theme_bw() + scale_fill_viridis_d() +
   scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
@@ -710,7 +708,7 @@ exp4 <- exp4 %>%
 
 ggplot() +
   geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 1)) +
-  facet_grid(Choice_type ~ cond) +
+  facet_grid(model ~ cond) +
   geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp4) +
   theme_bw() + scale_fill_viridis_d() +
   scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
