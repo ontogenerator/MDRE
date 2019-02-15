@@ -31,8 +31,10 @@ Please provide an abstract of no more than 150 words. Your abstract should expla
 # Introduction
 
 [@levy_root_2012]
-
-The partial preference observed in choice experiments can be explained by profitability matching [@kacelnik_central_1984], which states that animals proportionally alocate their effort depending on the relative pay-off of the options. 
+[@kacelnik_risky_1998]
+[@rosenstrom_scalar_2016]
+[@rivalan_principles_2017]
+The partial preference observed in choice experiments can be explained by profitability matching [@kacelnik_central_1984], which states that animals proportionally allocate their effort depending on the relative pay-off of the options. 
 
 # Results
 
@@ -151,9 +153,9 @@ conds_tab %>%
   kableExtra::add_header_above(c(" " = 2, "option A" = 3, "option B" = 3, "A/B" = 1)) %>%
   kableExtra::footnote(alphabet =
                          c("conditions in experiment 1 and 4 were identical; only conditions for experiment 1 are shown here for brevity; ",
-                           "the volumes (in microliters) shown are for cohorts 1 and 3. In cohort 2 the volumes were 4.8 instead of 4, 9.6 instead of 10, 14.4 instead of 15, and 20.8 instead of 20 microliters; ",
-                           "return rate (expected value)",
-                           "condition BVP1 in experiment 1 was not repeated in experiment 2, but instead the results from experiment 1 were used in further analyses"),
+                           "the volumes (in microliters) shown are for cohorts 1 and 3. In cohort 2 the volumes were 4.7 instead of 4, 9.4 instead of 10, 14.0 instead of 15, and 20.3 instead of 20 microliters; ",
+                           "return rate (expected value); ",
+                           "condition BVP1 in experiment 1 was not repeated in experiment 2, but instead the results from experiment 1 were reused in further analyses"),
                        threeparttable = T)
 ```
   
@@ -462,10 +464,10 @@ exp4_diff %>%
 
 ## Decision models of two-dimensional choice
 
-We based our decision models on the Scalar Utility Theory (SUT, @kacelnik_risky_1998; @rosenstrom_scalar_2016), which models memory traces for reward amounts as normal distributions centered around the remembered value (e.g. volume). The scalar property is implemented by setting the standard deviations of these distributions to be proportional to their means. Choice can then be modelled by taking a single sample from each distribution and selecting the option with the larger sample. We extended this action selection procedure by an additional feature. In order to ensure exploration even when the overlap between distributions approached zero, we used an $\epsilon$-greedy strategy, so that with probability $\epsilon$ an agent chose at random and at probability 1 - $\epsilon$ the agent used the SUT action selection. In the following we refer to $\epsilon$ as the lapse rate [@rivalan_principles_2017]. [perhaps it is better to let $\epsilon = 0$ and only have the coefficient of variation as a free parameter?]  
-As previously explained, the discrimination performance of reward probability can be reasonably predicted by the relative intensity of the two options [@rivalan_principles_2017]. This suggests that the memory traces of reward probabilities also exhibit the scalar property, so that discrimination of small probabilities (e.g. 0.2 vs. 0.5, rel.int. = 0.86) is easier  than discrimination of large probabilities (e.g. 0.5 vs. 0.8, rel.int. = 0.46). Consequently, discrimination (of either volumes or probabilities) when options vary along a single dimension can be modelled by SUT.  
+We based our decision models on the Scalar Utility Theory (SUT, @kacelnik_risky_1998; @rosenstrom_scalar_2016), which models memory traces for reward amounts as normal distributions centered around the remembered value (e.g. volume). The scalar property is implemented by setting the standard deviations of these distributions to be proportional to their means. Choice can then be modeled by taking a single sample from each distribution and selecting the option with the larger sample. We extended this action selection procedure by an additional feature. In order to ensure exploration even when the overlap between distributions approached zero, we used an $\epsilon$-greedy strategy, so that with probability $\epsilon$ an agent chose at random and at probability 1 - $\epsilon$ the agent used the SUT action selection. In the following we refer to $\epsilon$ as the lapse rate [@rivalan_principles_2017]. [perhaps it is better to let $\epsilon = 0$ and only have the coefficient of variation as a free parameter?]  
+As previously explained, the discrimination performance of reward probability can be reasonably predicted by the relative intensity of the two options [@rivalan_principles_2017]. This suggests that the memory traces of reward probabilities or of overall utility also exhibit the scalar property, so that discrimination of small probabilities (e.g. 0.2 vs. 0.5, rel.int. = 0.86) is easier  than discrimination of large probabilities (e.g. 0.5 vs. 0.8, rel.int. = 0.46). Consequently, discrimination (of either volumes or probabilities) when options vary along a single dimension can be modeled by SUT.  
 
-We next extend this model for multi-dimentional choice situations. We considered various implementations of the base SUT model described above that differed in the integration of information from the volume and probability dimensions. These models were:  
+We next extend this model for multi-dimensional choice situations. We considered various implementations of the base SUT model described above that differed in the integration of information from the volume and probability dimensions. These models were:  
 
 1. *Scalar expected value model*. There is a single memory trace for each option and it consists in the simple product of the estimate for the volume and the estimate for the probability (expected value). The scalar property is implemented as $N(vp,\gamma\cdot vp)$, where $v$ is the volume estimate, $p$ is the probability estimate, and $\gamma$ is a free parameter, the coefficient of variation. This model thus utilizes information from all dimensions for every decision.    
 
@@ -475,7 +477,7 @@ The memory traces in the remaining models are identical to the traces in model 2
   
 3. *Random dimension model*. Each decision is based on a single dimension, selected with probability 0.5.  
 
-4. *Winner-takes-all model*. Each decision is based only on the dimension with the higher subjective salience. The salience for a vector of samples from the underlying memory traces along one dimension, e.g. volume $v = (S_{1}, S_{2}, ..., S_{n})$, is calculated as $n\cdot\frac{max(v) - min(v)}{\sum_{i=1}^{n}{v}}$, where $n$ is the number of options. In the case of $n = 2$, the salience is equivalent to the previously described relative intensity measure. For dimensions of equal salience the model reverts to model 3.  
+4. *Winner-takes-all model*. Each decision is based only on the dimension with the higher subjective salience. The salience for a vector of samples $(S_i)$ from the underlying memory traces along one dimension, e.g. volume $v = (S_{1}, S_{2}, ..., S_{n})$, is calculated as $n\cdot\frac{max(v) - min(v)}{\sum_{i=1}^{n}{v}}$, where $n$ is the number of options. In the case of $n = 2$, the salience is equivalent to the previously described relative intensity measure. For dimensions of equal salience the model reverts to model 3.  
   
 The last two models are examples of a lexicographic rule, in which the dimensions are checked in a specific order. If the salience of a dimension is higher than a given threshold, then a decision is made based only on this dimension. Otherwise the next-order dimension is checked. If all dimensions have saliences below the threshold, the model reverts to model 3.  The value of the threshold was 0.8, the psychometric function threshold for probability [@rivalan_principles_2017].  
 
@@ -494,7 +496,7 @@ cv_fit <- function(phys1, phys2, cv, lapse) {
 se <- function(x) sqrt(var(x)/length(x)) # function for calculating the standard error
 
 baselines <- summaries %>%
-  filter(str_detect(cond, "BP"), experiment %in% c(1, 2)) %>%
+  filter(str_detect(cond, "BP")) %>%
   mutate(phys1 = ifelse(experiment == 2, 1, 0.5),
          phys2 = 0.2) %>%
   group_by(IdLabel) %>%
@@ -521,7 +523,7 @@ mean_cvs <- cvs %>%
   mutate_if(is.numeric, round, 2)
 
 baselines_vol <- summaries %>%
-  filter(str_detect(cond, "BV"), experiment %in% c(1, 2)) %>%
+  filter(str_detect(cond, "BV")) %>%
   mutate(phys1 = 20,
          phys2 = 4) %>%
   group_by(IdLabel) %>%
@@ -579,7 +581,7 @@ devs <- summ_sims %>%
 
 
 RMSEs <- devs %>%
-  filter(!(str_detect(cond, "BP") & experiment %in% c(1, 2))) %>%
+  filter(!str_detect(cond, "BP")) %>%
   group_by(experiment, model) %>%
   summarise(RMSE = sqrt(mean(deviance, na.rm = TRUE))) %>%
   arrange(experiment, RMSE)
@@ -596,7 +598,7 @@ ranks <- RMSEs %>%
   rmse_ranks()
 
 RMSEs_cohorts <- devs %>%
-  filter(!(str_detect(cond, "BP") & experiment %in% c(1, 2))) %>%
+  filter(!str_detect(cond, "BP")) %>%
   mutate(cage1 = cohort != 2) %>%
   group_by(experiment, model, cage1) %>%
   summarise(RMSE = sqrt(mean(deviance, na.rm = TRUE))) %>%
@@ -615,7 +617,7 @@ ranks_coh13 <- RMSEs_cohorts %>%
   rmse_ranks()
 ```
 
-All models described above share the same two free parameters: the scalar factor $\gamma$ (coefficient of variation) and the lapse rate. In order to obtain an estimate for $\gamma$, we first fitted a single-dimension SUT model to the probability baseline discrimination performances of all mice in experiments 1 and 2 (conditions BPV1 and BPV2). The lapse rate was estimated as twice the frequency of sampling, i.e. twice frequency of visits to the non-rewarding dispensers over the baseline conditions [@rivalan_principles_2017]. The resulting estimates for $\gamma$ (`r mean_cvs$cv_mean`) and the lapse rate (`r mean_cvs$lapse_mean`) were averaged across animals and then used as the values of the free parameters in out-of-sample tests of the six models. With each model  we generated 100 choices by 100 individuals for each remaining experimental condition (excluding BPV1 and BPV2 in experiments 1 and 2). We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE) based on the differences between the discrimination performances of individual mice and the medians of the distributions of predicted performances. Finally, we ranked the models by the RMSE scores. Since we wanted to analyze asymptotic choice, we did not model learning but assumed that the memory traces of the agents were accurate estimates of the physical reward properties.  
+All models described above share the same two free parameters: the scalar factor $\gamma$ (coefficient of variation) and the lapse rate. In order to obtain an estimate for $\gamma$, we first fitted a single-dimension SUT model to the probability baseline discrimination performances of all mice in experiments 1, 2, and 4 (conditions BPV1 and BPV2). The lapse rate was estimated as twice the frequency of sampling, i.e. twice the frequency of visits to the non-rewarding dispensers over the baseline conditions [@rivalan_principles_2017]. The resulting average estimates (across animals) for $\gamma$ (`r mean_cvs$cv_mean`) and the lapse rate (`r mean_cvs$lapse_mean`) were then used as the values of the free parameters in out-of-sample tests of the six models. With each model  we generated 100 choices by 100 individuals for each experimental condition. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1, 2, and 4. Finally, we ranked the models by the RMSE scores. Since we wanted to analyze asymptotic choice, we did not model learning but assumed that the memory traces of the agents were accurate estimates of the physical reward properties.  
   
 ```{r modTable}
 data.frame(model = 1:6,
@@ -636,7 +638,7 @@ ranks %>%
   kableExtra::add_header_above(c(" " = 1, "experiment" = 4))
 ```
 
-There was no single model that could best explain the choice of the mice in all experiments, but only models 1 (scalar expected value) and 4 (winner-takes-all), were in the top-three performing models for all experiments (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)). However, due to the striking differences in performance in cohort 2 compared to the others, we also ranked the models separately for the different mouse groups, depending on which cage they performed the experiments in (cohorts 1 and 3 in cage 1 and cohort 2 in cage 2). Indeed, two very different patterns emerged for the different cages. For the two cohorts in cage 1, model 1 (scalar expected value) was best supported, followed by models 4 (winner-takes-all) and 6 (volume first). In contrast, model 5 (probability first) was best supported for cohort 2, followed by model 4 (winner-takes-all).
+There was no single model that could best explain the choice of the mice in all experiments, but only models 1 (scalar expected value), 2 (hurdle) and 4 (winner-takes-all), were in the top-three performing models for three out of the four experiments (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)). However, due to the striking differences in performance between cohort 2 and the other cohorts, we also ranked the models separately for the different mouse groups, depending on which cage they performed the experiments in (cohorts 1 and 3 in cage 1 and cohort 2 in cage 2). Indeed, two different patterns emerged for the different cages. For the two cohorts in cage 1, models 1 (scalar expected value) and 2 (hurdle) were best supported, followed by models 4 (winner-takes-all) and 6 (volume first). Notably, model 6 (volume first) was the best performing model in experiment 4. In contrast, model 5 (probability first) was the best supported model for cohort 2, followed by models 3 (random dimension) and 4 (winner-takes-all).
 
 ```{r coh13RankTable}
 ranks_coh13 %>%
@@ -658,16 +660,20 @@ ranks_coh2 %>%
 ```
 # Discussion
 
+Use of complete information vs. heuristics.  
+Emergence of take-the-best heuristic? What level is the scalar property properly applied to? It is not possible to differentiate from our data, whether probabilities are actually estimated without any noise, but the noise is "added" during integration with volume (as postulated in the SUT), or both volume and probability independently exhibit the scalar property and their product (expected value) does as well.  
+The volumes delivered to the mice were not error-free, but the pumping process (and most? aliquoting processes) inherently makes the error proportional to the volume dispensed. However, this delivery error is measurably much smaller than the fitted values for $\gamma$.   
 
 ## Difference between cohorts
 
+We do not have an explanation for the striking difference in discrimination performance between cohort 2 and the rest. One possibility is that it is an unexpected side-effect of the difference in reward delivery mechanisms between cages. As explained in the Methods, the precision of the reward reward volumes was lower in cage 2, which housed cohort 2. However, the magnitude of the difference is small ($0.33 \pm 0.03  \mu Lstep^{-1}$ vs. $1.56 \pm 0.24  \mu Lstep^{-1}$), which is not expected to influence volume discrimination to the observed extent. Future experiments can address this by specifically manipulating the reliability of the volume dimension.  
 
+## Is $\gamma$ constant?  
+Most likely not, at least for volume: the discrimination performance improves over time, approaching the performance for probability. This can be seen as evidence against model 1 and support for two different $\gamma$ in model 2. Alternatively, the gamma is the same, but the weighting between the two dimension changes over time (model 3, but with unequal weights).    
 
 # Animals, Methods, and Materials
 
 The different experimental conditions for all animals and cohorts are listed in Table \@ref(tab:conds).
-
-
 
 Guidelines can be included for standard research article sections, such as this one. 
 
@@ -683,7 +689,7 @@ On first mention, please provide details of any manufacturers in the following f
 \beginsupplement
 
 
-(ref:labsimexp1) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 1**. Columns give the condition names (Table \@ref(tab:conds)) and rows, the model number (Table \@ref(tab:modTable)).  Empirical data from the three cohorts are represented by differently color-filled density curves from the observed discrimination performances. Simulation data are represented by an empty thick-lined density curve. The dashed line gives the median of the empirical data and the dotted line - the median of the simulated data. The discrimination performance gives the relative visitation rate of the more profitable option, or, in the incongruent condition, the option with the higher volume.  
+(ref:labsimexp1) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 1**. Columns give the condition names (Table \@ref(tab:conds)) and rows, the model number (Table \@ref(tab:modTable)).  Empirical data from the three cohorts are represented by differently color-filled density curves from the observed discrimination performances. Simulation data are represented by an empty thick-lined density curve. The dashed line gives the median of the empirical data and the dotted line - the median of the simulated data. The discrimination performance gives the relative visitation rate of the more profitable option, or, in the incongruent condition, the option with the higher volume.  
 
 ```{r simexp1, fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp1)"}
 exp1 <- exp1 %>%
@@ -705,7 +711,7 @@ ggplot() +
 
 ```
 
-(ref:labsimexp2) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 2**. Same notation as in Fig. \@ref(fig:simexp1).
+(ref:labsimexp2) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 2**. Same notation as in Fig. \@ref(fig:simexp1).
 
 ```{r simexp2,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp2)"}
 exp2 <- exp2 %>%
@@ -725,7 +731,7 @@ ggplot() +
 
 ```
 
-(ref:labsimexp3) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 3**. Same notation as in Fig. \@ref(fig:simexp1). 
+(ref:labsimexp3) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 3**. Same notation as in Fig. \@ref(fig:simexp1). 
 
 ```{r simexp3,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp3)"}
 exp3 <- exp3 %>%
@@ -745,7 +751,7 @@ ggplot() +
 
 ```
 
-(ref:labsimexp4) **Comparison of discrimination performances in all seven simulation models and in the three mouse cohorts in Experiment 4**. Same notation as in Fig. \@ref(fig:simexp1). 
+(ref:labsimexp4) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 4**. Same notation as in Fig. \@ref(fig:simexp1). 
 
 ```{r simexp4,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp4)"}
 exp4 <- exp4 %>%
