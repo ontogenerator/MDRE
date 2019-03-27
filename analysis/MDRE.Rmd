@@ -26,7 +26,8 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE)
 
 # Abstract
 
-Please provide an abstract of no more than 150 words. Your abstract should explain the main contributions of your article, and should not contain any material that is not included in the main text. 
+The experiments in this study were designed to test how mice use information from two reward dimensions (probability and volume) when deciding where to forage.  
+[Please provide an abstract of no more than 150 words. Your abstract should explain the main contributions of your article, and should not contain any material that is not included in the main text. ]
 
 # Introduction
 
@@ -34,6 +35,7 @@ Please provide an abstract of no more than 150 words. Your abstract should expla
 [@kacelnik_risky_1998]
 [@rosenstrom_scalar_2016]
 [@rivalan_principles_2017]
+[@matell_timing_2014]
 The partial preference observed in choice experiments can be explained by profitability matching [@kacelnik_central_1984], which states that animals proportionally allocate their effort depending on the relative pay-off of the options. 
 
 # Results
@@ -47,6 +49,7 @@ library(lme4)
 library(coin)
 library(kableExtra)
 library(Hmisc)
+library(broom)
 library(broom.mixed)
 
 miceChoices <- read.csv2(file = "data/ChoicesOutput.csv", header = TRUE, dec = ".", sep = ";",
@@ -58,7 +61,8 @@ miceChoices <- miceChoices %>%
   filter(hour(DateTime) < 9 | hour(DateTime) > 15) %>% # due to older program version the initial visits
   # before the starting could not be flagged and therefore could not be removed by CSVreader.R
   # therefore they need to be removed here
-  mutate(count = 1:n(), revcount = n():1) %>%
+  mutate(count = 1:n(), revcount = n():1,
+         DateTime = as.POSIXct(DateTime)) %>%
   group_by(rel,IdLabel,day) %>%
   mutate(relcount = 1:n()) %>%
   ungroup()
@@ -315,73 +319,120 @@ In contrast to experiment 1, in experiment 2 mice showed an increase in discrimi
 
 
 ## Experiment 3
-In the previous experiments we used two different baseline conditions for each dimension (BPV1, BPV2, BVP1, and BVP2, Table \@ref(tab:conds)), in order to exhaust all combinations of reward stimuli and balance the experimental design. But could it be that the level of the background dimension despite being the same across choice options nevertheless affected the discrimination performance on the relevant dimension? Researches have proposed that in multi-dimensional choice the decision process can be considerably simplified if differences that are (nearly) equal are not evaluated but ignored [@tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014]. Thus we can predict that regardless of the level of the background dimension, the discrimination performance on the relevant dimension should remain constant. Alternatively, animals could use all information from every reward dimensions for the estimation of a single value (utility) [@tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014]. Since the utility curve is generally assumed to progressively increase with the increase in any given good, but with a decreasing slope [@kahneman_prospect_1979; @kenrick_deep_2009; but see also @kacelnik_risky_1998], we may expect that as the background dimension increases the subjective difference between the options will decrease and the discrimination performance will also decrease as a result. The same prediction can be made if we assume that the strength of preference is increased under lean environmental conditions, i.e. at low reward volume or probability [@schuck-paim_state-dependent_2004]. In order to test whether the two reward dimensions (volume and probability) interact with each other even when one of them is irrelevant (being the same across choice options), we performed experiment 3.  
+In the previous experiments we used two different baseline conditions for each dimension (BPV1, BPV2, BVP1, and BVP2, Table \@ref(tab:conds)), in order to exhaust all combinations of reward stimuli and balance the experimental design. But could it be that the level of the background dimension despite being the same across choice options nevertheless affected the discrimination performance on the relevant dimension? Researches have proposed that in multi-dimensional choice the decision process can be considerably simplified if differences that are (nearly) equal are not evaluated but ignored [@tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014]. Thus we can predict that regardless of the level of the background dimension, the discrimination performance on the relevant dimension should remain constant. Alternatively, animals could use all information from every reward dimensions for the estimation of a single value (utility), in what some authors refer to as "absolute reward evaluation" [@tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014]. Since the utility curve is generally assumed to progressively increase with the increase in any given good, but with a decreasing slope [@kahneman_prospect_1979; @kenrick_deep_2009; but see also @kacelnik_risky_1998], we may expect that as the background dimension increases the subjective difference between the options will decrease and the discrimination performance will also decrease as a result [@shafir_comparative_2014]. The same prediction can be made if we assume that the strength of preference increases under lean environmental conditions, i.e. at low reward volume or probability [@schuck-paim_state-dependent_2004]. In order to test whether the two reward dimensions (volume and probability) interact with each other even when one of them is irrelevant (being the same across choice options), we performed experiment 3.  
   
 (ref:labresexp3) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension**. The two choice options always differed along the relevant dimension (either probability or volume, given on the abscissa) at a fixed relative intensity. The discrimination performance for each mouse was measured at four different levels of the background dimension, which was set at the same values on both choice options during a single drinking session, but differed from condition to condition (Table \@ref(tab:conds)). Each symbol is the average for an individual mouse over the two presentations of the same condition (original and reversal). The smallest effect size of interest was determined to be the slope that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. The remaining notation is the same as in Fig. \@ref(fig:exp1).   
   
 ```{r exp3, fig.cap="(ref:labresexp3)"}
 
-slopes <- exp3 %>%
-  split(.$dim) %>%
-  map(~ lmer(performance ~ bg_level + (bg_level|IdLabel), data = .)) %>%
-  map(coef) %>%
-  map("IdLabel") %>%
-  map_df(~rownames_to_column(., var = "IdLabel"))
+# slopes <- exp3 %>%
+#   split(.$dim) %>%
+#   map(~ lmer(performance ~ bg_level + (bg_level|IdLabel), data = .)) %>%
+#   map(coef) %>%
+#   map("IdLabel") %>%
+#   map_df(~rownames_to_column(., var = "IdLabel"))
 
-dims <- data.frame(dimension = rep(c("prob", "vol"), each = 24))
+# exp3 %>%
+#   filter(dim == "P", bg_level < 1) %>%
+#   ggplot(aes(bg_level, performance, color = IdLabel)) + geom_point() +
+#   stat_smooth(method = lm, se = FALSE) + facet_grid(. ~ cohort)
 
 cohorts <- exp3 %>%
   ungroup() %>%
   select(IdLabel, cohort) %>%
   distinct()
 
+slopes <- exp3 %>%
+  nest(-IdLabel) %>%
+  mutate(fit = map(data, ~lm(performance ~ bg_level*dim, data = .)),
+         tidied = map(fit, tidy),
+         glanced = map(fit, glance),
+         confint = map(fit, confint_tidy, conf.level = 0.95))
+
+# slopes %>%
+#   unnest(tidied) %>%
+#   bind_cols(slps %>%
+#   unnest(confint) %>%
+#     select(-IdLabel)) %>%
+#   mutate_if(is.numeric, ~round(., 4)) %>%
+#   filter(str_detect(term, "bg_level")) %>%
+#   ggplot() + geom_pointrange(aes(x = IdLabel, y = estimate, ymin = conf.low, ymax = conf.high)) +
+#   facet_grid(. ~ term) +
+#   geom_hline(yintercept = 0, linetype = 3) +
+#   geom_hline(yintercept = sl_sesoi, linetype = 2) +
+#   geom_hline(yintercept = -sl_sesoi, linetype = 2)
+
+
 slopes <- slopes %>%
-  bind_cols(dims) %>%
-  rename(slope = bg_level) %>%
+  unnest(tidied) %>%
+  mutate_if(is.numeric, ~round(., 4)) %>%
+  select(IdLabel, term, estimate) %>%
+  spread(term, estimate) %>%
+  rename(int_prob = `(Intercept)`, prob = bg_level) %>%
+  mutate(vol = prob + `bg_level:dimV`,
+         int_vol = int_prob + dimV) %>%
+  select(-contains("dimV")) %>%
+  gather(dim, estimate, -IdLabel) %>%
+  mutate(type = ifelse(str_detect(dim, "_"), "intercept", "slope"),
+         dim = str_replace(dim, "int_", "")) %>%
+  spread(type, estimate) %>%
   inner_join(cohorts)
 
-set.seed(42)
-CIs <- slopes %>%
-  nest(-dimension) %>%
-  mutate(test = map(data, ~ mean_cl_boot(.x$slope, conf.int = 1 - 2*(alpha_1)))) %>%
-  unnest(test) %>%
-  select(-data)
-
-prob_slope <- CIs %>%
-  filter(dimension == "prob") %>%
-  pull(ymin) %>%
-  round(3)
-
-mean_PV1 <- exp3 %>%
-  filter(cond == "PV1") %>%
-  summarise(performance = mean(performance)) %>%
-  pull(performance)
-
-pred_PV4 <- slopes %>%
-  filter(dimension == "prob") %>%
-  summarise(intercept = mean(`(Intercept)`)) + prob_slope
 
 sl_sesoi <- data.frame(val = c(4/20, 20/20),
                        performance = c(0.5, 0.6))
 
 sl_sesoi <- coef(lm(performance ~ val, data = sl_sesoi))[2]
 
-ggplot() +
-  geom_pointrange(data = CIs, aes(x = dimension, y = y, ymin = ymin, ymax = ymax),
+set.seed(42)
+CIs <- slopes %>%
+  nest(-dim) %>% 
+  mutate(test = map(data, ~mean_cl_boot(.x$slope, conf.int = 1 - 2*(alpha_1)))) %>%
+  unnest(test) %>%
+  select(-data)
+
+slopes %>%
+  ggplot() +
+  geom_pointrange(data = CIs, aes(x = dim, y = y, ymin = ymin, ymax = ymax),
                   color = "darkblue", size = 1) +
   geom_hline(yintercept = sl_sesoi, linetype = 2) +
   geom_hline(yintercept = -sl_sesoi, linetype = 2) +
   theme_bw() +
-  geom_jitter(data = slopes,
-              aes(dimension, slope, color = cohort), alpha = 0.7, width = 0.1) +
-  ylab("difference") +
+  geom_jitter(aes(dim, slope, color = cohort), alpha = 0.7, width = 0.1) +
   scale_color_viridis_d()
+
+prob_slope <- CIs %>%
+  filter(dim == "prob") %>%
+  pull(ymin) %>%
+  round(3)
+ 
+mean_PV1 <- exp3 %>%
+  filter(cond == "PV1") %>%
+  summarise(performance = mean(performance)) %>%
+  pull(performance)
+
+pred_PV1 <-  slopes %>%
+  filter(dim == "prob") %>%
+  summarise(performance = mean(intercept) + prob_slope * 0.2) #bg_level = 0.2
+
+pred_PV4 <- slopes %>%
+  filter(dim == "prob") %>%
+  summarise(performance = mean(intercept) + prob_slope * 1) #bg_level = 1
+# 
+# miceChoices %>%
+#   filter(experiment == 3, !is.na(prof), cond != "training") %>%
+#   mutate(prof = factor(prof)) %>%
+#   group_by(cond, IdLabel, prof) %>%
+#   summarise(mean_vol = mean(vol),
+#             var_vol = var(vol)) %>%
+# ggplot() + stat_summary(aes(cond, mean_vol, color = prof), fun.data = mean_cl_boot,
+#                fun.args = list(conf.int = 0.95))
 
 ```
   
 The conditions in experiment 3 were chosen to be similar to the background conditions in the previous experiments, by having one background and one relevant dimension (Table \@ref(tab:conds)). The relevant dimension always differed between the two options. For the probability dimension, we selected the same values of 0.2 and 0.5 (rel.int. = 0.86), as in the previous experiments. For the volume dimension we selected the values of 4 $\mu$L (4.8 $\mu$L in cohort 2) and 10 $\mu$L (9.6 $\mu$L in cohort 2), because the combination of a higher volume with a probability of 0.8 was expected to result in an insufficient number of visits for analysis (Table \@ref(tab:conds)). Cohort 2 had different reward volumes due to differences in the pumping process (Animals, Materials, and Methods), which also resulted in a lower relative intensity for volume (0.67 instead of 0.86). There were four different levels for each background dimension (volume and probability, Table \@ref(tab:conds)). Each mouse had its own pseudo-random sequence of the eight possible conditions. As in all other experiments, each condition was followed by a reversal. In order to test whether the background dimension affected discrimination performance, we fitted linear mixed models for each dimension, with discrimination performance as the dependent variable, background level as the independent variable and mouse as a random variable, using lme4 in R [@bates_fitting_2015]. The background level was the proportion of the actual value to the maximum of the four values tested, e.g. the background levels for volumes `r bg_vol` were `r bg_lev_vol`, respectively. We defined *a priori* a smallest effect size of interest (sesoi), as `r sl_sesoi`, which is the slope that would result from a difference of 0.1 in discrimination performance between the smallest and the largest background levels (PV1 and PV4, 0.2 and 1, respectively). A slope (whether positive or negative) within the sesoi interval was considered equivalent to zero and demonstrating a lack of an effect of background dimension.  
   
-The results of experiment 3 show that the discrimination performance was independent from the level of the background dimension, since the slope was equivalent to zero for both probability and volume (Fig. \@ref(fig:resoverview), Fig. \@ref(fig:exp3)). These results support the hypothesis that decision-makers may ignore reward dimensions if options do not vary along them.
+The results of experiment 3 show that the discrimination performance for volume was independent from probability as the background dimension, since the slope was equivalent to zero (Fig. \@ref(fig:resoverview), Fig. \@ref(fig:exp3)). However, the discrimination performance for probability decreased with increasing volumes, although the effect size was small (Fig. \@ref(fig:resoverview), Fig. \@ref(fig:exp3)). These results partially support the hypothesis that decision-makers may ignore reward dimensions if options do not vary along them.
 
 ## Experiment 4  
 In previous experiments [@rivalan_principles_2017], mice showed an improved discrimination performance for volume over time. A potential explanation is that, with experience mice become more attuned to the relevant dimension [More references and explanation on selective attention in multi-dimensional choice here...]
@@ -408,7 +459,8 @@ exp14_simpl <- exp14 %>%
 
 exp14_diff <- exp14_simpl %>%
   spread(rep, performance) %>%
-  mutate(difference = `2` - `1`)
+  mutate(difference = `2` - `1`) %>%
+  droplevels()
 
 set.seed(42)
 CIs_14 <- exp14_diff %>%
@@ -464,14 +516,14 @@ exp4_diff %>%
 
 ## Decision models of two-dimensional choice
 
-We based our decision models on the Scalar Utility Theory (SUT, @kacelnik_risky_1998; @rosenstrom_scalar_2016), which models memory traces for reward amounts as normal distributions centered around the remembered value (e.g. volume). The scalar property is implemented by setting the standard deviations of these distributions to be proportional to their means. Choice can then be modeled by taking a single sample from each distribution and selecting the option with the larger sample. We extended this action selection procedure by an additional feature. In order to ensure exploration even when the overlap between distributions approached zero, we used an $\epsilon$-greedy strategy, so that with probability $\epsilon$ an agent chose at random and at probability 1 - $\epsilon$ the agent used the SUT action selection. In the following we refer to $\epsilon$ as the lapse rate [@rivalan_principles_2017]. [perhaps it is better to let $\epsilon = 0$ and only have the coefficient of variation as a free parameter?]  
+We based our decision models on the Scalar Utility Theory (SUT, @kacelnik_risky_1998; @rosenstrom_scalar_2016), which models memory traces for reward amounts as normal distributions centered around the remembered value (e.g. volume). The scalar property is implemented by setting the standard deviations of these distributions to be proportional to their means. Choice can then be modeled by taking a single sample from each distribution and selecting the option with the larger sample.   
 As previously explained, the discrimination performance of reward probability can be reasonably predicted by the relative intensity of the two options [@rivalan_principles_2017]. This suggests that the memory traces of reward probabilities or of overall utility also exhibit the scalar property, so that discrimination of small probabilities (e.g. 0.2 vs. 0.5, rel.int. = 0.86) is easier  than discrimination of large probabilities (e.g. 0.5 vs. 0.8, rel.int. = 0.46). Consequently, discrimination (of either volumes or probabilities) when options vary along a single dimension can be modeled by SUT.  
 
 We next extend this model for multi-dimensional choice situations. We considered various implementations of the base SUT model described above that differed in the integration of information from the volume and probability dimensions. These models were:  
 
-1. *Scalar expected value model*. There is a single memory trace for each option and it consists in the simple product of the estimate for the volume and the estimate for the probability (expected value). The scalar property is implemented as $N(vp,\gamma\cdot vp)$, where $v$ is the volume estimate, $p$ is the probability estimate, and $\gamma$ is a free parameter, the coefficient of variation. This model thus utilizes information from all dimensions for every decision.    
+1. *Scalar expected value model*. There is a single memory trace for each option and it consists in the simple product of the estimate for the volume and the estimate for the probability (expected value). The scalar property is implemented as $\pi N(v,\gamma \cdot v)$, where $v$ is the volume estimate, $\pi$ is the probability estimate, and $\gamma$ is a free parameter, the coefficient of variation. This model thus utilizes information from all dimensions for every decision.    
 
-2. *Hurdle model*. There are traces for each dimension for every option, where each trace exhibits the scalar property independently and the value is obtained by simple multiplication of the traces for each dimension: $N(v, \gamma \cdot v)\times N(p, \gamma \cdot p)$. This model also utilizes information from all dimensions for every decision. Although this model allows each dimension to have its own scalar factor, e.g. $\gamma_{p} \neq \gamma_{v}$, for the sake of simplicity we assume that they are both equal.   
+2. *Hurdle model*. There are traces for each dimension for every option, where each trace exhibits the scalar property independently and the value is obtained by simple multiplication of the traces for each dimension: $N(\pi, \gamma \cdot \pi)\times N(v, \gamma \cdot v)$. This model also utilizes information from all dimensions for every decision. Although this model allows each dimension to have its own scalar factor, e.g. $\gamma_{\pi} \neq \gamma_{v}$, for the sake of simplicity we assume that they are both equal.   
 
 The memory traces in the remaining models are identical to the traces in model 2, but these models usually consider only a single dimension.  
   
@@ -487,70 +539,102 @@ The last two models are examples of a lexicographic rule, in which the dimension
   
 ```{r message = FALSE, warning = FALSE}
 
-#### cv baseline fit for prob and later out of sample test approach 
-cv_fit <- function(phys1, phys2, cv, lapse) {
-  (1 - lapse) * pnorm(0, mean = phys1 - phys2, sd = cv * sqrt(phys1^2 + phys2^2), lower.tail = FALSE) + lapse * 0.5
+#### gamma baseline fit for probability
+
+sut_fit <- function(phys1, phys2, gamma, beta) {
+  pnorm(0, mean = phys1 - phys2, sd = beta + gamma * sqrt(phys1^2 + phys2^2), lower.tail = FALSE)
 }
 
-
-se <- function(x) sqrt(var(x)/length(x)) # function for calculating the standard error
+# basel <- summaries %>%
+#   filter(str_detect(cond, "BPV1"), experiment != 2) %>%
+#   mutate(phys1 = ifelse(experiment == 2, 1, 0.5),
+#          phys2 = 0.2) %>%
+#   group_by(IdLabel) %>%
+#     mutate(lapse = mean(sampling) * 2,
+#            relev_perf = 1 - sampling)
+# 
+# basel %>%
+#   mutate(experiment = factor(experiment)) %>%
+#   ggplot(aes(performance, fill = cohort)) + geom_density(alpha = 0.2)
 
 baselines <- summaries %>%
-  filter(str_detect(cond, "BP")) %>%
+  filter(str_detect(cond, "BP"), experiment != 2) %>%
   mutate(phys1 = ifelse(experiment == 2, 1, 0.5),
          phys2 = 0.2) %>%
   group_by(IdLabel) %>%
-  mutate(lapse = mean(sampling) * 2)
+    mutate(lapse = mean(sampling) * 2,
+           relev_perf = 1 - sampling)
 
-cvs <-  baselines %>%
+gammas <- baselines %>%
   nest(-IdLabel) %>%
-  mutate(test = map(data, ~ coef(nls(performance ~ cv_fit(phys1, phys2, cv, lapse = lapse), 
-                                weights = Nrel,
-                                start = c(cv = 0.5),
-                                lower = c(cv = 0),
-                                upper = c(cv = 5),
-                                data = .x,
-                                algorithm = "port",
-                                control = list(maxiter = 5000))))) %>%
-  unnest(test) %>%
+  mutate(gamma = map_dbl(data, ~ coef(nls(performance ~ sut_fit(phys1, phys2, gamma, beta = 0),
+                                     weights = Nrel,
+                                     start = c(gamma = 0.5),
+                                     lower = c(gamma = 0),
+                                     upper = c(gamma = 10),
+                                     data = .x,
+                                     algorithm = "port",
+                                     control = list(maxiter = 50000,
+                                                    minFactor = 1/2000))))) %>%
   unnest(data) %>%
-  group_by(IdLabel, cohort, lapse) %>%
-  summarise(cv = mean(test))
+  group_by(IdLabel, cohort) %>%
+  summarise(gamma = mean(gamma))
+ 
 
-mean_cvs <- cvs %>%
+gamma <- gammas %>%
   ungroup() %>%
-  summarise_at(vars(cv, lapse), funs(mean, se)) %>%
+  summarise(median = median(gamma),
+            mad = mad(gamma)) %>%
   mutate_if(is.numeric, round, 2)
+
+# cvs <-  baselines %>%
+#   nest(-IdLabel) %>%
+#   mutate(test = map(data, ~ coef(nls(performance ~ cv_fit(phys1, phys2, cv, lapse = 0), 
+#                                 weights = Nrel,
+#                                 start = c(cv = 0.5),
+#                                 lower = c(cv = 0),
+#                                 upper = c(cv = 5),
+#                                 data = .x,
+#                                 algorithm = "port",
+#                                 control = list(maxiter = 5000))))) %>%
+#   unnest(test) %>%
+#   unnest(data) %>%
+#   group_by(IdLabel, cohort, lapse) %>%
+#   summarise(cv = mean(test))
+# 
+# mean_cvs <- cvs %>%
+#   ungroup() %>%
+#   summarise_at(vars(cv, lapse), list(mean, se)) %>%
+#   mutate_if(is.numeric, round, 2)
 
 baselines_vol <- summaries %>%
   filter(str_detect(cond, "BV")) %>%
   mutate(phys1 = 20,
          phys2 = 4) %>%
   group_by(IdLabel) %>%
-  mutate(lapse = mean(sampling) * 2)
+  mutate(lapse = mean(sampling) * 2,
+           relev_perf = 1 - sampling)
 
-cvs_vol <-  baselines_vol %>%
+gammas_vol <-  baselines_vol %>%
   nest(-IdLabel) %>%
-  mutate(test = map(data, ~ coef(nls(performance ~ cv_fit(phys1, phys2, cv, lapse = lapse), 
-                                weights = Nrel,
-                                start = c(cv = 0.5),
-                                lower = c(cv = 0),
-                                upper = c(cv = 5),
-                                data = .x,
-                                algorithm = "port",
-                                control = list(maxiter = 5000))))) %>%
-  unnest(test) %>%
-  unnest(data) %>%
-  group_by(IdLabel, cohort, lapse) %>%
-  summarise(cv = mean(test))
- 
-mean_cvs_vol <- cvs_vol %>%
-  # ungroup() %>%
-  group_by(cohort != 2) %>%
-  summarise_at(vars(cv, lapse), funs(mean, se))
+  mutate(test = map_dbl(data, ~ coef(nls(performance ~ sut_fit(phys1, phys2, gamma, beta = 0),
+                                     weights = Nrel,
+                                     start = c(gamma = 0.7),
+                                     lower = c(gamma = 0),
+                                     upper = c(gamma = 20),
+                                     data = .x,
+                                     algorithm = "port",
+                                     control = list(maxiter = 50000,
+                                                    minFactor = 1/2000))))) %>%
+  unnest(data)
+  
+median_gamma_vol <- gammas_vol %>%
+   # ungroup() %>%
+   group_by(cohort != 2) %>%
+   summarise(med_gamma = median(test), mad_gamma = mad(test))
 
 
-sims_data <- read.csv2(file = "data/simulations.csv",
+sims_data <- read.csv2(file = "data/simulations_coh2.csv",
                         header = TRUE, dec = ".", sep = ";", na.strings = "NA")
 
 summ_sims <- sims_data %>%
@@ -581,7 +665,7 @@ devs <- summ_sims %>%
 
 
 RMSEs <- devs %>%
-  filter(!str_detect(cond, "BP")) %>%
+  filter(!(str_detect(cond, "BP") & experiment != 2)) %>%
   group_by(experiment, model) %>%
   summarise(RMSE = sqrt(mean(deviance, na.rm = TRUE))) %>%
   arrange(experiment, RMSE)
@@ -617,7 +701,7 @@ ranks_coh13 <- RMSEs_cohorts %>%
   rmse_ranks()
 ```
 
-All models described above share the same two free parameters: the scalar factor $\gamma$ (coefficient of variation) and the lapse rate. In order to obtain an estimate for $\gamma$, we first fitted a single-dimension SUT model to the probability baseline discrimination performances of all mice in experiments 1, 2, and 4 (conditions BPV1 and BPV2). The lapse rate was estimated as twice the frequency of sampling, i.e. twice the frequency of visits to the non-rewarding dispensers over the baseline conditions [@rivalan_principles_2017]. The resulting average estimates (across animals) for $\gamma$ (`r mean_cvs$cv_mean`) and the lapse rate (`r mean_cvs$lapse_mean`) were then used as the values of the free parameters in out-of-sample tests of the six models. With each model  we generated 100 choices by 100 individuals for each experimental condition. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1, 2, and 4. Finally, we ranked the models by the RMSE scores. Since we wanted to analyze asymptotic choice, we did not model learning but assumed that the memory traces of the agents were accurate estimates of the physical reward properties.  
+All models described above share the same free parameter, the scalar factor $\gamma$. In order to obtain estimates for $\gamma$, we first fitted each models to the probability baseline discrimination performances of all mice in experiments 1, and 4 (conditions BPV1 and BPV2). The resulting median estimates (across animals) for $\gamma$ were then used as the values of the free parameter in out-of-sample tests of the six models. With each model  we generated 100 choices by 100 individuals for each experimental condition. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1 and 4. Finally, we ranked the models by the RMSE scores. Since we wanted to analyze asymptotic choice, we did not model learning but assumed that the memory traces of the agents were accurate estimates of the physical reward properties.  
   
 ```{r modTable}
 data.frame(model = 1:6,
@@ -638,7 +722,7 @@ ranks %>%
   kableExtra::add_header_above(c(" " = 1, "experiment" = 4))
 ```
 
-There was no single model that could best explain the choice of the mice in all experiments, but only models 1 (scalar expected value), 2 (hurdle) and 4 (winner-takes-all), were in the top-three performing models for three out of the four experiments (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)). However, due to the striking differences in performance between cohort 2 and the other cohorts, we also ranked the models separately for the different mouse groups, depending on which cage they performed the experiments in (cohorts 1 and 3 in cage 1 and cohort 2 in cage 2). Indeed, two different patterns emerged for the different cages. For the two cohorts in cage 1, models 1 (scalar expected value) and 2 (hurdle) were best supported, followed by models 4 (winner-takes-all) and 6 (volume first). Notably, model 6 (volume first) was the best performing model in experiment 4. In contrast, model 5 (probability first) was the best supported model for cohort 2, followed by models 3 (random dimension) and 4 (winner-takes-all).
+There was no single model that could best explain the choice of the mice in all experiments, but models 1 (scalar expected value), 2 (hurdle), and 4 (winner-takes-all) were in the top-three performing models for three out of the four experiments (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)). However, due to the striking differences in performance between cohort 2 and the other cohorts, we also ranked the models separately for the different mouse groups, depending on which cage they performed the experiments in (cohorts 1 and 3 in cage 1 and cohort 2 in cage 2). Indeed, two different patterns emerged for the different cages. For the two cohorts in cage 1, models 1 (scalar expected value) and 2 (hurdle) were the best supported models, followed by 4 (winner-takes-all) and 6 (volume first). Notably, model 6 (volume first) was the best performing model in experiments 3 and 4, but the worst-performing model in experiments 1 and 2. In contrast, model 5 (probability first) was the best supported model for cohort 2 in all experiments, followed by models 3 (random dimension) and 2 (hurdle).
 
 ```{r coh13RankTable}
 ranks_coh13 %>%
@@ -660,16 +744,70 @@ ranks_coh2 %>%
 ```
 # Discussion
 
-Use of complete information vs. heuristics.  
-Emergence of take-the-best heuristic? What level is the scalar property properly applied to? It is not possible to differentiate from our data, whether probabilities are actually estimated without any noise, but the noise is "added" during integration with volume (as postulated in the SUT), or both volume and probability independently exhibit the scalar property and their product (expected value) does as well.  
-The volumes delivered to the mice were not error-free, but the pumping process (and most? aliquoting processes) inherently makes the error proportional to the volume dispensed. However, this delivery error is measurably much smaller than the fitted values for $\gamma$.   
+The foraging choices of the mice in this study provide evidence both for and against the full use of information. In the first two experiments, mice showed different discrimination performances in the conditions in which both reward dimensions were relevant (congruent and incongruent conditions) compared to the baselines, in which only one of the two dimensions was relevant (Figs. \@ref(fig:exp1), \@ref(fig:exp2)). Consequently, the best supported models for these experiments (here we exclude cohort 2 and address the difference between cohorts below) were the models that made use of the full information from both reward dimensions, or from the dimension that was subjectively more salient (Table. \@ref(tab:coh13RankTable)). Although these models were good predictors of the mouse choices in experiments 3 and 4 as well, the best-performing model was the one that only considered the probability dimension if differences on the volume dimension were insufficient to reach a decision (Fig. \@ref(fig:exp4b), Table \@ref(tab:coh13RankTable)). Thus, it appears that mice initially used information from all reward dimensions without bias, but with experience started to rely more on one reward dimension and disregard the other when both dimensions differed between choice options.  
+In similar and more complex choice situations when options vary on several dimensions, an animal has no immediate method of distinguishing the relevant from the background dimensions. Instead it has to rely on its experience over many visits before it can obtain information about the long-term profitability associated with the different reward dimensions. Under such circumstances a decision rule that considers all or the most salient reward dimensions initially and prioritizes dimensions based on gathered experience can be profitable without being too computationally demanding. Indeed, with the particular experimental design in this study, a mouse using a "volume first" priority heuristic would have preferrentialy visited the more profitable option (whenever there was one) in every single experimental condition, including the incongruent conditions.  
+
+## Scalar property considerations
+
+For laboratory mice, which usually have unrestricted access to a water bottle, the volume of a water reward is not a stimulus that predicts reward profitability. An alternative explanation of our results is that the mice used the "volume first" heuristic from the beginning of the experiment, but only became better at discriminating volumes in the last two experiments. This interpretation is supported by the comparison between experiments 1 and 4 (Fig. \@ref(fig:exp4a)), as well as from previous experiments [@rivalan_principles_2017], in which mice improved their volume discrimination over time. It is not possible with these data to distinguish whether the effect was caused by training or age. Perhaps an increase in mouth capacity or in the number of salt taste receptors due to aging [check with literature] allows adult mice to better discriminate water volumes. Comparing the discrimination performance of older naive and younger trained mice would help clarify this confound. In any case, the change in discrimination performance for volume suggests that the scalar property only approximately holds, and that the $\gamma$ for volume is not truly constant over a long period of time. This can be seen as evidence against the scalar expected value model and support for two different scalars ($\gamma_{\pi} \neq \gamma_{v}$) in the hurdle model. Alternatively, there is only one scalar, but the weights of the two dimensions change over time (as in a biased random dimension model with unequal dimension weights). Yet another model extension that can account for the observed discrimination performances would be to introduce an explicit sampling (exploration-exploitation balance) method [@nachev_behavioral_2019; @sih_linking_2012]. With this implementation there is no change in the scalar property, but the frequency of sampling visits changes over time. The biggest challenge is that, in contrast to time intervals for which the peak procedure exists [@kacelnik_risky_1998], we do not have a method to interrogate the probability or volume estimate that an animal has, in order to more directly measure the scalar factor rather than infer it from choice behavior.  
+
+```{r message = FALSE, warning = FALSE}
+n_vis_exp3 <- miceChoices %>%
+  filter(experiment == 3) %>%
+  mutate(cohort = factor(cohort)) %>%
+  group_by(day, cond, IdLabel, cohort) %>%
+  summarise(count = max(count),
+            relcount = max(relcount)) %>%
+  inner_join(exp3_tab %>%
+  select(cond, bg_level, cohort, dim))
+
+# n_vis_exp3 %>%
+#   ggplot() +
+#   geom_point(aes(bg_level, relcount, color = IdLabel)) +
+#     stat_smooth(aes(bg_level, relcount, color = IdLabel), method = lm, se = FALSE) +
+#   facet_grid(cohort ~ dim)
+
+n_vis_exp3 <- n_vis_exp3 %>%
+  group_by(dim, cond) %>%
+  summarise(mean_n = round(mean(relcount), 0),
+            sd = round(sd(relcount, na.rm = TRUE), 0))
+
+n_low <- n_vis_exp3 %>%
+  filter(cond == "PV1") %>%
+  select(-dim, -cond) 
+
+n_high <- n_vis_exp3 %>%
+  filter(cond == "PV4") %>%
+  select(-dim, -cond)
+
+```
+
+## Interaction between dimensions and comparative reward evaluation
+
+Although mice were about equally good at discriminating volume rewards at each different probability, the discrimination of probabilities decreased at higher volumes (Fig. \@ref(fig:exp3); the estimated effect size was a decrease of `r pred_PV1 - pred_PV4` between a volume background at 4 $\mu L$ and at 20 $\mu L$). This suggests that the two dimensions interact with each other. Absolute reward evaluation [@shafir_intransitivity_1994; @shafir_comparative_2014] and state-dependent evaluation [@schuck-paim_state-dependent_2004] are both consistent with this decrease in discrimination performance, but not with the lack of effect in the conditions in which the probability was the background dimension. With comparable return rates (Table \@ref(tab:conds)) between the two series of conditions, these hypotheses make the same predictions regardless of which dimension is relevant and which is background. An alternative explanation is that arriving at a good estimate of probability requires a large number of visits and when the rewards are richer (of higher volume), mice satiate earlier and make a smaller total number of visits, resulting in poor estimates of the probabilities and poorer discrimination performance. Consistent with this explanation, mice made on average ($\pm$ SD) `r n_low$mean_n` $\pm$ `r n_low$sd` nose pokes at the relevant dispensers at 4 $\mu L$, but only `r n_high$mean_n` $\pm$ `r n_high$sd` nose pokes at 20 $\mu L$.  
+
+As mentioned earlier, researchers have proposed that with absolute reward evaluation the difference/mean ratio in an experimental series like our experiment 3 should decrease with the increase of the background dimension, leading to a decrease in the proportion preference for the high-profitability alternative (i.e. discrimination performance) [@shafir_comparative_2014]. However, if we multiply the estimates for each dimension together, as in our models 1 and 2, we have an implementation that qualifies as absolute reward evaluation (because a single utility is calculated from the different reward dimensions), which however does not satisfy this prediction (Fig. \@ref(fig:exp3models)). In fact, none of our models exhibited an effect of the background dimension in experiment 3 on the discrimination performance, with all slopes equivalent to zero (Fig. \@ref(fig:exp3models)). Thus, our results also show that the background dimensions need not have an effect on the discrimination performance, even with absolute reward evaluation.  
 
 ## Difference between cohorts
 
-We do not have an explanation for the striking difference in discrimination performance between cohort 2 and the rest. One possibility is that it is an unexpected side-effect of the difference in reward delivery mechanisms between cages. As explained in the Methods, the precision of the reward reward volumes was lower in cage 2, which housed cohort 2. However, the magnitude of the difference is small ($0.33 \pm 0.03  \mu Lstep^{-1}$ vs. $1.56 \pm 0.24  \mu Lstep^{-1}$), which is not expected to influence volume discrimination to the observed extent. Future experiments can address this by specifically manipulating the reliability of the volume dimension.  
+(ref:Idurs) **Visit durations during rewarded and unrewarded nose pokes for the three cohorts in all experiments.** Columns give the status of the nose poke (rewarded or unrewarded) and rows, the experiment number.  Data from the three cohorts are represented by differently color-filled density curves from the observed individual nose poke durations.  
 
-## Is $\gamma$ constant?  
-Most likely not, at least for volume: the discrimination performance improves over time, approaching the performance for probability. This can be seen as evidence against model 1 and support for two different $\gamma$ in model 2. Alternatively, the gamma is the same, but the weighting between the two dimension changes over time (model 3, but with unequal weights).    
+```{r Idurs, fig.height = 7, fig.width = 10, fig.cap="(ref:Idurs)"}
+miceChoices %>%
+  # filter(cond == "I") %>%
+  mutate(log_dur = log(eventDuration),
+         cohort = factor(cohort),
+         rewardstatus = ifelse(rewardstatus > 0, "rewarded", "unrewarded")) %>%
+  ggplot(aes(eventDuration/1000, fill = cohort)) +
+  geom_density(alpha = 0.2) +
+  facet_grid(experiment ~ rewardstatus) +
+  xlab("duration of nose poke [log10(s)]") +
+  theme_bw() +
+  scale_x_log10() +
+  scale_fill_viridis_d()
+```
+
+The most likely explanation that we can give for the unexpected difference in behavior between the cohorts (most obvious in Fig. \@ref(fig:exp4b)) is a cage effect. As explained in Animals, Methods, and Materials, the precision of the reward volumes was lower in cage 2, which housed cohort 2. It is surprising that such a small magnitude of the difference ($0.33 \pm 0.03$  $\mu Lstep^{-1}$ in cage 1 vs. $1.56 \pm 0.24$  $\mu Lstep^{-1}$ in cage 2) could influence volume discrimination to the observed extent. Future experiments can address this issue by specifically manipulating the reliability of the volume dimension using the higher-precision pump. However, we suspect that the difference between cohorts might have been caused by the acoustic noise produced by the stepping motors of the pumps. The pump in cage 1 was much louder, whereas the one in cage 2 was barely audible (to a human experimenter). This could have made it harder for mice in cage 2 to discern whether a reward was forthcoming. As a result, mice waited longer before leaving the dispenser during unrewarded nose pokes  (Fig. \@ref(fig:Idurs)). This potentially costly delay might have increased the relative importance of the probability dimension, resulting in the observed discrimination performance in cohort 2. In an unrelated experiment we tested two cohorts of mice in both cages simultaneously and then translocated them to the other cage. The results demonstrated that differences in discrimination performance were primarily influenced by cage and not by cohort (data not shown). Thus, the sound cue associated with reward delivery may be an important confounding factor in probability discrimination in mice.  
 
 # Animals, Methods, and Materials
 
@@ -771,11 +909,80 @@ ggplot() +
 
 ```
 
+
+(ref:exp3models) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension for different decision models**. The two choice options always differed along the relevant dimension (either probability or volume) at a fixed relative intensity. The discrimination performance for 100 virtual mice making 100 decisions each was measured at four different levels of the background dimension. Symboles and whiskers give means and 95% confidence intervals estimated from bootstraps. The smallest effect size of interest (dashed lines) was determined to be the slope that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. Compare to Fig. \@ref(fig:exp3).  
+
+```{r exp3models, fig.cap="(ref:exp3models)"}
+bg_levs <- exp3_tab %>%
+  filter(cohort == 1) %>%
+  select(cond, bg_level)
+
+slopes_lm <- sims_data %>%
+  filter(experiment == 3) %>%
+  mutate(dim = str_sub(cond, 1, 1),
+         id = factor(id),
+         model = factor(model)) %>%
+  inner_join(bg_levs) %>%
+  nest(-model) %>%
+  mutate(fit = map(data, ~ lm(performance ~ bg_level*dim, data = .)),
+         tidied = map(fit, tidy),
+         confint = map(fit, confint_tidy, conf.level = 0.9)
+         )
+
+slopes_lm <- slopes_lm %>%
+  unnest(tidied) %>%
+  bind_cols(slopes_lm %>% 
+  unnest(confint) %>%
+    select(-model)) %>%
+  mutate_if(is.numeric, ~round(., 4)) 
+  
+slopes_lm %>%
+  filter(str_detect(term, "bg_level")) %>%
+  mutate(estimate = ifelse(str_detect(term, ":"), lag(estimate) + estimate, estimate),
+         conf.low = ifelse(str_detect(term, ":"), lag(estimate) + conf.low, conf.low),
+         conf.high = ifelse(str_detect(term, ":"), lag(estimate) + conf.high, conf.high),
+         term = ifelse(str_detect(term, ":"), "volume", "probability")) %>%
+  ggplot() +
+  geom_pointrange(aes(x = model, y = estimate, ymin = conf.low, ymax = conf.high)) +
+  facet_grid(. ~ term) +
+  ylab("slope estimate") +
+  geom_hline(yintercept = 0, linetype = 3) + 
+  geom_hline(yintercept = sl_sesoi, linetype = 2) +
+  geom_hline(yintercept = -sl_sesoi, linetype = 2) +
+  theme_bw()
+
+
+
+# deltat_ts <- miceChoices %>%
+#   # filter(rewardstatus == 1, prof == 0) %>%
+#   rowwise() %>%
+#   group_by(day, IdLabel, cond, experiment, prof) %>%
+#   mutate(deltat_reward = DateTime - lag(DateTime),
+#          cohort = factor(cohort)) %>%
+#   group_by(experiment, day, cond, prof, IdLabel, cohort) %>%
+#   summarise(median_deltat = median(deltat_reward, na.rm = TRUE)) 
+# 
+# 
+# deltat_ts %>%
+#   filter(cond != "explore") %>%
+#   # filter(!is.na(prof)) %>%
+#   ggplot(aes(cond, median_deltat, color = cohort)) +
+#   # geom_jitter(width = 0.4, alpha = 0.7) +
+#   stat_summary(fun.data = mean_cl_boot,
+#                fun.args = list(conf.int = 0.95)) +
+#   facet_grid(experiment ~ prof) +
+#   # ylim(0, 1000) +
+#   scale_color_viridis_d()
+
+
+```
+
+
 # Acknowledgments
 Individuals who have contributed materially to the work, but do not satisfy the authorship criteria should be listed in the acknowledgements section. Authors should seek permission to include any individuals mentioned in the acknowledgements.  
 
 # Competing interests
-At this stage we request that the corresponding author provides a statement of financial and non-financial competing interests on behalf of all authors. Examples include paid employment or consultancy, stock ownership, patent applications, personal relationships with relevant individuals, and membership of an advisory board.
+The authors declare that they have no conflict of interest.  
 
 
 
