@@ -62,7 +62,8 @@ miceChoices <- miceChoices %>%
   # before the starting could not be flagged and therefore could not be removed by CSVreader.R
   # therefore they need to be removed here
   mutate(count = 1:n(), revcount = n():1,
-         DateTime = as.POSIXct(DateTime)) %>%
+         DateTime = as.POSIXct(DateTime),
+         cohort = factor(cohort)) %>%
   group_by(rel,IdLabel,day) %>%
   mutate(relcount = 1:n()) %>%
   ungroup()
@@ -537,7 +538,7 @@ The last two models are examples of a lexicographic rule, in which the dimension
 
 6. *Volume first model*. Volume is checked first, then probability.  
   
-```{r message = FALSE, warning = FALSE}
+```{r}
 
 #### gamma baseline fit for probability
 
@@ -751,7 +752,7 @@ In similar and more complex choice situations when options vary on several dimen
 
 For laboratory mice, which usually have unrestricted access to a water bottle, the volume of a water reward is not a stimulus that predicts reward profitability. An alternative explanation of our results is that the mice used the "volume first" heuristic from the beginning of the experiment, but only became better at discriminating volumes in the last two experiments. This interpretation is supported by the comparison between experiments 1 and 4 (Fig. \@ref(fig:exp4a)), as well as from previous experiments [@rivalan_principles_2017], in which mice improved their volume discrimination over time. It is not possible with these data to distinguish whether the effect was caused by training or age. Perhaps an increase in mouth capacity or in the number of salt taste receptors due to aging [check with literature] allows adult mice to better discriminate water volumes. Comparing the discrimination performance of older naive and younger trained mice would help clarify this confound. In any case, the change in discrimination performance for volume suggests that the scalar property only approximately holds, and that the $\gamma$ for volume is not truly constant over a long period of time. This can be seen as evidence against the scalar expected value model and support for two different scalars ($\gamma_{\pi} \neq \gamma_{v}$) in the hurdle model. Alternatively, there is only one scalar, but the weights of the two dimensions change over time (as in a biased random dimension model with unequal dimension weights). Yet another model extension that can account for the observed discrimination performances would be to introduce an explicit sampling (exploration-exploitation balance) method [@nachev_behavioral_2019; @sih_linking_2012]. With this implementation there is no change in the scalar property, but the frequency of sampling visits changes over time. The biggest challenge is that, in contrast to time intervals for which the peak procedure exists [@kacelnik_risky_1998], we do not have a method to interrogate the probability or volume estimate that an animal has, in order to more directly measure the scalar factor rather than infer it from choice behavior.  
 
-```{r message = FALSE, warning = FALSE}
+```{r}
 n_vis_exp3 <- miceChoices %>%
   filter(experiment == 3) %>%
   mutate(cohort = factor(cohort)) %>%
@@ -784,30 +785,39 @@ n_high <- n_vis_exp3 %>%
 
 ## Interaction between dimensions and comparative reward evaluation
 
-Although mice were about equally good at discriminating volume rewards at each different probability, the discrimination of probabilities decreased at higher volumes (Fig. \@ref(fig:exp3); the estimated effect size was a decrease of `r pred_PV1 - pred_PV4` between a volume background at 4 $\mu L$ and at 20 $\mu L$). This suggests that the two dimensions interact with each other. Absolute reward evaluation [@shafir_intransitivity_1994; @shafir_comparative_2014] and state-dependent evaluation [@schuck-paim_state-dependent_2004] are both consistent with this decrease in discrimination performance, but not with the lack of effect in the conditions in which the probability was the background dimension. With comparable return rates (Table \@ref(tab:conds)) between the two series of conditions, these hypotheses make the same predictions regardless of which dimension is relevant and which is background. An alternative explanation is that arriving at a good estimate of probability requires a large number of visits and when the rewards are richer (of higher volume), mice satiate earlier and make a smaller total number of visits, resulting in poor estimates of the probabilities and poorer discrimination performance. Consistent with this explanation, mice made on average ($\pm$ SD) `r n_low$mean_n` $\pm$ `r n_low$sd` nose pokes at the relevant dispensers at 4 $\mu L$, but only `r n_high$mean_n` $\pm$ `r n_high$sd` nose pokes at 20 $\mu L$.  
+Although mice were about equally good at discriminating volume rewards at each different probability, the discrimination of probabilities decreased at higher volumes (Fig. \@ref(fig:exp3); the estimated effect size was a decrease of `r pred_PV1 - pred_PV4` between a volume background at 4 $\mu L$ and at 20 $\mu L$). This suggests that the two dimensions interact with each other. Absolute reward evaluation [@shafir_intransitivity_1994; @shafir_comparative_2014] and state-dependent evaluation [@schuck-paim_state-dependent_2004] are both consistent with this decrease in discrimination performance, but not with the lack of effect in the conditions in which the probability was the background dimension. With comparable return rates (Table \@ref(tab:conds)) between the two series of conditions, these hypotheses make the same predictions regardless of which dimension is relevant and which is background. An alternative explanation is that arriving at a good estimate of probability requires a large number of visits and when the rewards are richer (of higher volume), mice satiate earlier and make a smaller total number of visits, resulting in poor estimates of the probabilities and poorer discrimination performance. Consistent with this explanation, mice made on average ($\pm$ SD) `r n_low$mean_n` $\pm$ `r n_low$sd` nose pokes at the relevant dispensers at 4 $\mu L$, but only `r n_high$mean_n` $\pm$ `r n_high$sd` nose pokes at 20 $\mu L$ (Fig. \@ref(fig:npokes)).  
 
 As mentioned earlier, researchers have proposed that with absolute reward evaluation the difference/mean ratio in an experimental series like our experiment 3 should decrease with the increase of the background dimension, leading to a decrease in the proportion preference for the high-profitability alternative (i.e. discrimination performance) [@shafir_comparative_2014]. However, if we multiply the estimates for each dimension together, as in our models 1 and 2, we have an implementation that qualifies as absolute reward evaluation (because a single utility is calculated from the different reward dimensions), which however does not satisfy this prediction (Fig. \@ref(fig:exp3models)). In fact, none of our models exhibited an effect of the background dimension in experiment 3 on the discrimination performance, with all slopes equivalent to zero (Fig. \@ref(fig:exp3models)). Thus, our results also show that the background dimensions need not have an effect on the discrimination performance, even with absolute reward evaluation.  
 
 ## Difference between cohorts
 
-(ref:Idurs) **Visit durations during rewarded and unrewarded nose pokes for the three cohorts in all experiments.** Columns give the status of the nose poke (rewarded or unrewarded) and rows, the experiment number.  Data from the three cohorts are represented by differently color-filled density curves from the observed individual nose poke durations.  
+(ref:Idurs) **Visit durations during rewarded and unrewarded nose pokes for the three cohorts in all experiments.** Columns give the status of the nose poke (rewarded or unrewarded) and rows, the experiment number (1-4).  Data from the three cohorts are represented by differently color-filled density curves from the observed individual nose poke durations. Note the logarithmic scale on the abscissa.    
 
 ```{r Idurs, fig.height = 7, fig.width = 10, fig.cap="(ref:Idurs)"}
+
+prop_long <- miceChoices %>%
+  mutate(long = ifelse(eventDuration > 600000, 1, 0)) %>%
+  summarise(prop = round(mean(long), 4)) %>%
+  pull()
+  
+
 miceChoices %>%
-  # filter(cond == "I") %>%
+  # filter(eventDuration < 900000) %>%
   mutate(log_dur = log(eventDuration),
          cohort = factor(cohort),
          rewardstatus = ifelse(rewardstatus > 0, "rewarded", "unrewarded")) %>%
   ggplot(aes(eventDuration/1000, fill = cohort)) +
   geom_density(alpha = 0.2) +
   facet_grid(experiment ~ rewardstatus) +
-  xlab("duration of nose poke [log10(s)]") +
-  theme_bw() +
+  xlab("duration of nose poke [s]") +
   scale_x_log10() +
+  coord_cartesian(xlim = c(0.1, 100)) +
+  theme_bw() +
   scale_fill_viridis_d()
+
 ```
 
-The most likely explanation that we can give for the unexpected difference in behavior between the cohorts (most obvious in Fig. \@ref(fig:exp4b)) is a cage effect. As explained in Animals, Methods, and Materials, the precision of the reward volumes was lower in cage 2, which housed cohort 2. It is surprising that such a small magnitude of the difference ($0.33 \pm 0.03$  $\mu Lstep^{-1}$ in cage 1 vs. $1.56 \pm 0.24$  $\mu Lstep^{-1}$ in cage 2) could influence volume discrimination to the observed extent. Future experiments can address this issue by specifically manipulating the reliability of the volume dimension using the higher-precision pump. However, we suspect that the difference between cohorts might have been caused by the acoustic noise produced by the stepping motors of the pumps. The pump in cage 1 was much louder, whereas the one in cage 2 was barely audible (to a human experimenter). This could have made it harder for mice in cage 2 to discern whether a reward was forthcoming. As a result, mice waited longer before leaving the dispenser during unrewarded nose pokes  (Fig. \@ref(fig:Idurs)). This potentially costly delay might have increased the relative importance of the probability dimension, resulting in the observed discrimination performance in cohort 2. In an unrelated experiment we tested two cohorts of mice in both cages simultaneously and then translocated them to the other cage. The results demonstrated that differences in discrimination performance were primarily influenced by cage and not by cohort (data not shown). Thus, the sound cue associated with reward delivery may be an important confounding factor in probability discrimination in mice.  
+The most likely explanation that we can give for the unexpected difference in behavior between the cohorts (most obvious in Fig. \@ref(fig:exp4b)) is a cage effect. As explained in Animals, Methods, and Materials, the precision of the reward volumes was lower in cage 2, which housed cohort 2. It is surprising that such a small magnitude of the difference ($0.33 \pm 0.03$  $\mu Lstep^{-1}$ in cage 1 vs. $1.56 \pm 0.24$  $\mu Lstep^{-1}$ in cage 2) could influence volume discrimination to the observed extent. Future experiments can address this issue by specifically manipulating the reliability of the volume dimension using the higher-precision pump. However, we suspect that the difference between cohorts might have been caused by the acoustic noise and vibrations produced by the stepping motors of the pumps. The pump in cage 1 was much louder, whereas the one in cage 2 was barely audible (to a human experimenter). This could have made it harder for mice in the soft cage (cage 2) to discern whether a reward was forthcoming. As a result, mice waited longer before leaving the dispenser during unrewarded nose pokes  (Fig. \@ref(fig:Idurs)). This potentially costly delay might have increased the relative importance of the probability dimension, resulting in the observed discrimination performance in cohort 2. Furthermore, the same line of reasoning can also explain the improved volume discrimination form the first to the fourth experiment: there was a shift towards shorter visit durations in the cohorts in the loud cage (cage 1) from the first to the fourth experiment (Fig. \@ref(fig:Idurs)), suggesting that mice had learned over time to abort the unrewarded visits. In an unrelated experiment we tested two cohorts of mice in both cages simultaneously and then translocated them to the other cage. The results demonstrated that differences in discrimination performance were primarily influenced by cage and not by cohort (data not shown). Thus, the sound cue associated with reward delivery may be an important confounding factor in probability discrimination in mice, as it provides a signal for the reward outcome [@ojeda_paradoxical_2018].  
 
 # Animals, Methods, and Materials
 
@@ -909,6 +919,23 @@ ggplot() +
 
 ```
 
+(ref:npokes) **Total number of nose pokes for each experimental condition in the three cohorts in all experiments.** Rows show different experiments (1-4). Each symbol represents the total number of nose pokes for a single mouse over one of the two experimental days of the given condition.  
+
+```{r npokes, fig.height = 7, fig.width = 10, fig.cap="(ref:npokes)"}
+miceChoices %>%
+  filter(!str_detect(cond, "[r]")) %>%
+  group_by(cond, IdLabel, experiment, day, cohort) %>%
+  summarise(Ntot = n()) %>%
+  ggplot(aes(cond, Ntot, color = cohort)) +
+  geom_jitter(width = 0.3, alpha = 0.7) +
+  # stat_summary(fun.data = mean_cl_boot,
+  #              fun.args = list(conf.int = 0.95), size = 1.5, shape = 95) +
+  facet_grid(experiment ~ .) +
+  ylab("total number of nose pokes") +
+  xlab("condition") +
+  theme_bw() +
+  scale_color_viridis_d()
+```
 
 (ref:exp3models) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension for different decision models**. The two choice options always differed along the relevant dimension (either probability or volume) at a fixed relative intensity. The discrimination performance for 100 virtual mice making 100 decisions each was measured at four different levels of the background dimension. Symboles and whiskers give means and 95% confidence intervals estimated from bootstraps. The smallest effect size of interest (dashed lines) was determined to be the slope that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. Compare to Fig. \@ref(fig:exp3).  
 
