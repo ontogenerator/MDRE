@@ -61,11 +61,12 @@ miceChoices <- miceChoices %>%
   filter(hour(DateTime) < 9 | hour(DateTime) > 15) %>% # due to older program version the initial visits
   # before the starting could not be flagged and therefore could not be removed by CSVreader.R
   # therefore they need to be removed here
-  mutate(count = 1:n(), revcount = n():1,
+  group_by(IdLabel, day) %>%
+  mutate(count = 1:n(),
+         revcount = n():1,
          DateTime = as.POSIXct(DateTime),
-         cohort = factor(cohort)) %>%
-  group_by(rel,IdLabel,day) %>%
-  mutate(relcount = 1:n()) %>%
+         cohort = factor(cohort),
+         relcount = cumsum(rel)) %>%
   ungroup()
 
 summaries <- miceChoices %>%
@@ -344,11 +345,20 @@ cohorts <- exp3 %>%
   distinct()
 
 slopes <- exp3 %>%
-  nest(-IdLabel) %>%
-  mutate(fit = map(data, ~lm(performance ~ bg_level*dim, data = .)),
-         tidied = map(fit, tidy),
-         glanced = map(fit, glance),
-         confint = map(fit, confint_tidy, conf.level = 0.95))
+  group_by(IdLabel) %>%
+  group_modify(~tidy(lm(performance ~ bg_level*dim, data = .))) %>%
+  mutate_if(is.numeric, ~round(., 4)) %>%
+  select(IdLabel, term, estimate) %>%
+  spread(term, estimate) %>%
+  rename(int_prob = `(Intercept)`, prob = bg_level) %>%
+  mutate(vol = prob + `bg_level:dimV`,
+         int_vol = int_prob + dimV) %>%
+  select(-contains("dimV")) %>%
+  gather(dim, estimate, -IdLabel) %>%
+  mutate(type = ifelse(str_detect(dim, "_"), "intercept", "slope"),
+         dim = str_replace(dim, "int_", "")) %>%
+  spread(type, estimate) %>%
+  inner_join(cohorts)
 
 # slopes %>%
 #   unnest(tidied) %>%
@@ -364,33 +374,16 @@ slopes <- exp3 %>%
 #   geom_hline(yintercept = -sl_sesoi, linetype = 2)
 
 
-slopes <- slopes %>%
-  unnest(tidied) %>%
-  mutate_if(is.numeric, ~round(., 4)) %>%
-  select(IdLabel, term, estimate) %>%
-  spread(term, estimate) %>%
-  rename(int_prob = `(Intercept)`, prob = bg_level) %>%
-  mutate(vol = prob + `bg_level:dimV`,
-         int_vol = int_prob + dimV) %>%
-  select(-contains("dimV")) %>%
-  gather(dim, estimate, -IdLabel) %>%
-  mutate(type = ifelse(str_detect(dim, "_"), "intercept", "slope"),
-         dim = str_replace(dim, "int_", "")) %>%
-  spread(type, estimate) %>%
-  inner_join(cohorts)
-
-
 sl_sesoi <- data.frame(val = c(4/20, 20/20),
-                       performance = c(0.5, 0.6))
-
-sl_sesoi <- coef(lm(performance ~ val, data = sl_sesoi))[2]
+                       performance = c(0.5, 0.6)) %>%
+  lm(performance ~ val, data = .) %>%
+  coef() %>%
+  .[2]
 
 set.seed(42)
 CIs <- slopes %>%
-  nest(-dim) %>% 
-  mutate(test = map(data, ~mean_cl_boot(.x$slope, conf.int = 1 - 2*(alpha_1)))) %>%
-  unnest(test) %>%
-  select(-data)
+  group_by(dim) %>%
+  group_modify(~mean_cl_boot(.x$slope, conf.int = 1 - 2*(alpha_1)))
 
 slopes %>%
   ggplot() +
@@ -400,7 +393,8 @@ slopes %>%
   geom_hline(yintercept = -sl_sesoi, linetype = 2) +
   theme_bw() +
   geom_jitter(aes(dim, slope, color = cohort), alpha = 0.7, width = 0.1) +
-  scale_color_viridis_d()
+  scale_color_viridis_d() +
+  labs(x = "relevant dimension", y = "slope estimate")
 
 prob_slope <- CIs %>%
   filter(dim == "prob") %>%
@@ -436,7 +430,7 @@ The conditions in experiment 3 were chosen to be similar to the background condi
 The results of experiment 3 show that the discrimination performance for volume was independent from probability as the background dimension, since the slope was equivalent to zero (Fig. \@ref(fig:resoverview), Fig. \@ref(fig:exp3)). However, the discrimination performance for probability decreased with increasing volumes, although the effect size was small (Fig. \@ref(fig:resoverview), Fig. \@ref(fig:exp3)). These results partially support the hypothesis that decision-makers may ignore reward dimensions if options do not vary along them.
 
 ## Experiment 4  
-In previous experiments [@rivalan_principles_2017], mice showed an improved discrimination performance for volume over time. A potential explanation is that, with experience mice become more attuned to the relevant dimension [More references and explanation on selective attention in multi-dimensional choice here...]
+In previous experiments [@rivalan_principles_2017], mice showed an improved discrimination performance for volume over time. A potential explanation is that, with experience mice become more attuned to the relevant dimension.  [More references and explanation on selective attention in multi-dimensional choice here?]
 
 In order to test whether the discrimination performance for one or both dimensions improves over time, we performed experiment 4, which had the same conditions as experiment 1, but with a new pseudo-random order. The same mice participated in all experiments (1-4), with about seven weeks between experiment 1 and experiment 4. We tested the discrimination performance of all mice in each experimental condition for equivalence (Table \@ref(tab:conds)). As in the previous experiments, we also used equivalence tests on the contrasts between the baselines and the congruent and incongruent conditions.  
 
@@ -465,11 +459,15 @@ exp14_diff <- exp14_simpl %>%
 
 set.seed(42)
 CIs_14 <- exp14_diff %>%
-  ungroup() %>%
-  nest(-cond) %>%
-  mutate(test = map(data, ~ mean_cl_boot(.x$difference, conf.int = 1 - 2*(alpha_14)))) %>%
-  unnest(test) %>%
-  select(-data)
+  group_by(cond) %>%
+  group_modify(~ mean_cl_boot(.x$difference, conf.int = 1 - 2*(alpha_14)))
+  # ungroup() %>%
+  # nest(-cond) %>%
+  # mutate(test = map(data, ~ mean_cl_boot(.x$difference, conf.int = 1 - 2*(alpha_14)))) %>%
+  # unnest(test) %>%
+  # select(-data)
+
+
 
 exp14_diff %>%
   ggplot() +
@@ -567,8 +565,8 @@ baselines <- summaries %>%
            relev_perf = 1 - sampling)
 
 gammas <- baselines %>%
-  nest(-IdLabel) %>%
-  mutate(gamma = map_dbl(data, ~ coef(nls(performance ~ sut_fit(phys1, phys2, gamma, beta = 0),
+  group_by(IdLabel, cohort) %>%
+  group_modify(~tidy(coef(nls(performance ~ sut_fit(phys1, phys2, gamma, beta = 0),
                                      weights = Nrel,
                                      start = c(gamma = 0.5),
                                      lower = c(gamma = 0),
@@ -577,10 +575,7 @@ gammas <- baselines %>%
                                      algorithm = "port",
                                      control = list(maxiter = 50000,
                                                     minFactor = 1/2000))))) %>%
-  unnest(data) %>%
-  group_by(IdLabel, cohort) %>%
-  summarise(gamma = mean(gamma))
- 
+  select(gamma = x, -names)
 
 gamma <- gammas %>%
   ungroup() %>%
@@ -616,23 +611,22 @@ baselines_vol <- summaries %>%
   mutate(lapse = mean(sampling) * 2,
            relev_perf = 1 - sampling)
 
-gammas_vol <-  baselines_vol %>%
-  nest(-IdLabel) %>%
-  mutate(test = map_dbl(data, ~ coef(nls(performance ~ sut_fit(phys1, phys2, gamma, beta = 0),
+gammas_vol <- baselines_vol %>%
+  group_by(IdLabel, cohort) %>%
+  group_modify(~tidy(coef(nls(performance ~ sut_fit(phys1, phys2, gamma, beta = 0),
                                      weights = Nrel,
-                                     start = c(gamma = 0.7),
+                                     start = c(gamma = 0.5),
                                      lower = c(gamma = 0),
-                                     upper = c(gamma = 20),
+                                     upper = c(gamma = 10),
                                      data = .x,
                                      algorithm = "port",
                                      control = list(maxiter = 50000,
                                                     minFactor = 1/2000))))) %>%
-  unnest(data)
-  
+  select(gamma = x, -names)
+
 median_gamma_vol <- gammas_vol %>%
-   # ungroup() %>%
    group_by(cohort != 2) %>%
-   summarise(med_gamma = median(test), mad_gamma = mad(test))
+   summarise(med_gamma = median(gamma), mad_gamma = mad(gamma))
 
 
 sims_data <- read.csv2(file = "data/simulations_coh2.csv",
@@ -723,7 +717,7 @@ ranks %>%
   kableExtra::add_header_above(c(" " = 1, "experiment" = 4))
 ```
 
-There was no single model that could best explain the choice of the mice in all experiments, but models 1 (scalar expected value), 2 (hurdle), and 4 (winner-takes-all) were in the top-three performing models for three out of the four experiments (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)). However, due to the striking differences in performance between cohort 2 and the other cohorts, we also ranked the models separately for the different mouse groups, depending on which cage they performed the experiments in (cohorts 1 and 3 in cage 1 and cohort 2 in cage 2). Indeed, two different patterns emerged for the different cages. For the two cohorts in cage 1, models 1 (scalar expected value) and 2 (hurdle) were the best supported models, followed by 4 (winner-takes-all) and 6 (volume first). Notably, model 6 (volume first) was the best performing model in experiments 3 and 4, but the worst-performing model in experiments 1 and 2. In contrast, model 5 (probability first) was the best supported model for cohort 2 in all experiments, followed by models 3 (random dimension) and 2 (hurdle).
+There was no single model that could best explain the choice of the mice in all experiments, but models 1 (scalar expected value), 2 (hurdle), and 4 (winner-takes-all) were in the top-three performing models for three out of the four experiments (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), see also Appendix 1 Figures \@ref(fig:simexp1), \@ref(fig:simexp2), \@ref(fig:simexp3), and \@ref(fig:simexp4)). However, due to the striking differences in performance between cohort 2 and the other cohorts, we also ranked the models separately for the different mouse groups, depending on which cage they performed the experiments in (cohorts 1 and 3 in cage 1 and cohort 2 in cage 2). Indeed, two different patterns emerged for the different cages. For the two cohorts in cage 1, models 1 (scalar expected value) and 4 (winner-takes-all) were the best supported models, followed by 2 (hurdle) and 6 (volume first). Notably, model 6 (volume first) was the best performing model in experiments 3 and 4, but the worst-performing model in experiments 1 and 2. In contrast, model 5 (probability first) was the best supported model for cohort 2 in all experiments, followed by models 3 (random dimension) and 2 (hurdle).
 
 ```{r coh13RankTable}
 ranks_coh13 %>%
@@ -817,19 +811,28 @@ miceChoices %>%
 
 ```
 
-The most likely explanation that we can give for the unexpected difference in behavior between the cohorts (most obvious in Fig. \@ref(fig:exp4b)) is a cage effect. As explained in Animals, Methods, and Materials, the precision of the reward volumes was lower in cage 2, which housed cohort 2. It is surprising that such a small magnitude of the difference ($0.33 \pm 0.03$  $\mu Lstep^{-1}$ in cage 1 vs. $1.56 \pm 0.24$  $\mu Lstep^{-1}$ in cage 2) could influence volume discrimination to the observed extent. Future experiments can address this issue by specifically manipulating the reliability of the volume dimension using the higher-precision pump. However, we suspect that the difference between cohorts might have been caused by the acoustic noise and vibrations produced by the stepping motors of the pumps. The pump in cage 1 was much louder, whereas the one in cage 2 was barely audible (to a human experimenter). This could have made it harder for mice in the soft cage (cage 2) to discern whether a reward was forthcoming. As a result, mice waited longer before leaving the dispenser during unrewarded nose pokes  (Fig. \@ref(fig:Idurs)). This potentially costly delay might have increased the relative importance of the probability dimension, resulting in the observed discrimination performance in cohort 2. Furthermore, the same line of reasoning can also explain the improved volume discrimination form the first to the fourth experiment: there was a shift towards shorter visit durations in the cohorts in the loud cage (cage 1) from the first to the fourth experiment (Fig. \@ref(fig:Idurs)), suggesting that mice had learned over time to abort the unrewarded visits. In an unrelated experiment we tested two cohorts of mice in both cages simultaneously and then translocated them to the other cage. The results demonstrated that differences in discrimination performance were primarily influenced by cage and not by cohort (data not shown). Thus, the sound cue associated with reward delivery may be an important confounding factor in probability discrimination in mice, as it provides a signal for the reward outcome [@ojeda_paradoxical_2018].  
+The most likely explanation that we can give for the unexpected difference in behavior between the cohorts (most obvious in Fig. \@ref(fig:exp4b)) is a cage effect. As explained in Animals, Methods, and Materials, the precision of the reward volumes was lower in cage 2, which housed cohort 2. It is unlikely that such a small magnitude of the difference ($0.33 \pm 0.03$  $\mu Lstep^{-1}$ in cage 1 vs. $1.56 \pm 0.24$  $\mu Lstep^{-1}$ in cage 2) could influence volume discrimination to the observed extent. Future experiments can address this issue by specifically manipulating the reliability of the volume dimension using the higher-precision pump. However, we suspect that the difference between cohorts might have been caused by the acoustic noise and vibrations produced by the stepping motors of the pumps. The pump in cage 1 was much louder, whereas the one in cage 2 was barely audible (to a human experimenter). This could have made it harder for mice in the soft cage (cage 2) to discern whether a reward was forthcoming. As a result, mice waited longer before leaving the dispenser during unrewarded nose pokes  (Fig. \@ref(fig:Idurs)). This potentially costly delay might have increased the relative importance of the probability dimension, resulting in the observed discrimination performance in cohort 2. Furthermore, the same line of reasoning can also explain the improved volume discrimination form the first to the fourth experiment: there was a shift towards shorter visit durations in the cohorts in the loud cage (cage 1) from the first to the fourth experiment (Fig. \@ref(fig:Idurs)), suggesting that mice had learned over time to abort the unrewarded visits. In an unrelated experiment we tested two cohorts of mice in both cages simultaneously and then translocated them to the other cage. The results demonstrated that differences in discrimination performance were primarily influenced by cage and not by cohort (data not shown). Thus, the sound cue associated with reward delivery may be an important confounding factor in probability discrimination in mice, as it provides a signal for the reward outcome [@ojeda_paradoxical_2018].  
 
 # Animals, Methods, and Materials
 
+## Subjects
+
+The experiments were conducted with C57BL/6NCrl mice (Charles River, Sulzfeld, Germany, N_total_ = 30). Mice were five weeks old on arrival. The mice from each cohort were housed together. They were marked with unique Radiofrequency Identification tags (RFID: 12 × 2.1 mm, 125 kHz, Sokymat, Rastede, Germany) and also earmarked at age six weeks. At age seven weeks mice were transferred to the automated group home cage for the main experiment. Pellet chow (V1535, maintenance food, ssniff, Soest, Germany) was always accessible from a trough in the cage lid. Water was available from the operant modules of the automated group cage, depending on individual reward schedules. Light conditions in the experiments were 12:12 LD and climatic conditions were 23 $\pm$ 2 $^\circ$C and 50–70% humidity.
+
+## Ethics statement
+
+The experimental procedures were aimed at maximizing animal welfare. During experiments, mice remained undisturbed in their home cage. Data collection was automated, with animals voluntarily visiting waters dispensers to drink. The water intake and health of the mice was monitored daily. Due to the observational nature of the study, animals were free from damage, pain, and suffering. The animals were not sacrificed at the end of the study, which was performed under the supervision and with the approval of the animal welfare officer (*Tierschutzbeauftragter*) heading the animal welfare committee at the Humbold University. Experiments followed national regulations in accordance with the European Communities Council Directive 10/63/EU.  
+
+## Cage and dispenser system
+
+We used automated cages (612 × 435 × 216 mm, P2000, Tecniplast, Buggugiate, Italy) with woodchip bedding (AB 6, AsBe-wood, Gransee, Germany), and enriched with two grey PVC tubes and paper towels as nesting material. The cage was outfitted with four computer-controlled liquid dispensers. The experimental set-up is described in detail in @rivalan_principles_2017. Briefly, mice were detected at the dispensers via infrared beam-break sensors and RFID-sensors. Water delivery at each dispenser could be controlled, so that it could be restricted or dispensed at different amounts on an individual basis. Mice were therefore rewarded with droplets of water from the dispenser spout that they could remove by licking. We changed  cage bedding and weighed all animals on a weekly basis, always during the light phase and at least an hour before the start of the testing session. Data were recorded  and stored automatically on a laptop computer running a custom-written software in C#, based on the.NET framework. Time-stamped nose poke events and amounts of water delivered were recorded for each dispenser, with the corresponding mouse identity.  
+A second automated group cage (cage 2) was made for the purposes of this study, nearly identical to the one described above (cage 1). The crucial modification was that the stepping-motor syringe pump was replaced with a model that used disposable plastic 25-mL syringes instead of gas-tight Hamilton glass syringes (Series 1025). Thus, the pumping systems in the two cages differed in the smallest reward that could be delivered and in the precision of reward delivery (mean $\pm$ SD: $0.33 \pm 0.03$  $\mu Lstep^{-1}$ in cage 1 vs. $1.56 \pm 0.24$  $\mu Lstep^{-1}$ in cage 2). The precision of each pump was estimated by manually triggering reward visits at different preset pump steps (17 and 42 in cage 1, 3 and 12 in cage 2) and collecting the expelled liquid in a graduated glass pipette placed horizontally next to the cage. Each dispenser was measured at least 20 times for each pump step value.  
+
+## Experimental schedule
+
 The different experimental conditions for all animals and cohorts are listed in Table \@ref(tab:conds).
 
-Guidelines can be included for standard research article sections, such as this one. 
-
-Any "personal communications" relating to unpublished data should be incorporated within the main text, in the following format: (Author Initial(s) and Surname, personal communication, Month and Year). Authors should have permission from anyone named in this way and should be aware that a supporting letter will sometimes be requested.
-Within the Materials and Methods and/or figure legends, we encourage authors to provide complete information about their experiments, analyses, or data collection to ensure that readers can easily understand what was measured and analysed, and can accurately perform the relevant protocols.
-In cases where a new method within the submission would benefit from step-by-step protocols in addition to the methods described in the article, we would encourage authors to also consider submitting a detailed protocol to Bio-protocol.
-On first mention, please provide details of any manufacturers in the following format: company name, city, country (or state, if based in the United States).
-
+### Pre-training (include discrepancies between cohorts)
 
 \newpage
 # Appendix {-}
@@ -1006,10 +1009,13 @@ slopes_lm %>%
 
 
 # Acknowledgments
-Individuals who have contributed materially to the work, but do not satisfy the authorship criteria should be listed in the acknowledgements section. Authors should seek permission to include any individuals mentioned in the acknowledgements.  
+We thank Miléna Brunet for data acquisition, Katja Frei for assistance with the experiments, and Alexej Schatz for software programming.   
+
+# Authorship and contribution
+V.N. conceived the study, analysed the data, and programmed the simulations. Y.W. obtained the funding. V.N., M.R., and Y.W. wrote the paper.     
 
 # Competing interests
-The authors declare that they have no conflict of interest.  
+The authors declare that they have no competing interests.   
 
 
 
