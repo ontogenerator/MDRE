@@ -2,9 +2,9 @@ require(dplyr)
 require(stringr)
 
 
-folder <- choose.dir(caption = "Select folder with 'MasterTable' and other CSV files to load")
+folder <- choose.dir(caption = "Select main analysis folder")
 # folder <- "C:/Users/Vladi/Documents/MDRE/analysis"
-setwd(folder)
+# setwd(folder)
 
 
 # load MasterTable. Change for analysis of different data set
@@ -29,7 +29,7 @@ alldays <- c() # alldays is the sink for all daily data. reset in case it alread
 if (ndays > 0) {
   for (i in 1:ndays) {
 
-    nthday <- read.csv2(file = as.character(daypathlist$path[i]),  sep = ";", dec = ",", header = TRUE,
+    nthday <- read.csv2(file = paste0(folder, "/", as.character(daypathlist$path[i])),  sep = ";", dec = ",", header = TRUE,
                         fileEncoding = "UTF-16LE", as.is = T, row.names = NULL) #read csv file with raw data
     # ISSUE: Most mouse files have a ";" too many just before "SystemMsg", leading to mismatched
     # column labels
@@ -149,5 +149,5 @@ if (ndays > 0) {
     select(-choice,-poke,-unitLabel) %>%
     arrange(IdLabel, day, DateTime)
 
-  write.table(onlychoices, file = "ChoicesOutput.csv", sep = ";", row.names = FALSE)
+  write.table(onlychoices, file = paste0(file, "/data/", "ChoicesOutput.csv"), sep = ";", row.names = FALSE)
 }

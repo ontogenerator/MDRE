@@ -97,7 +97,7 @@ day;path;comments
 94;data/raw/AGC2VolProbDiscrim-15.10.14.csv;
 95;data/raw/AGC2VolProbDiscrim-15.10.15.csv;
 96;data/raw/AGC2VolProbDiscrim-15.10.16.csv;
-97;data/raw/AGC2VolProbDiscrimExploreP-15.10.21.csv;water ad. lib. for 4 days
+97;data/raw/AGC2VolProbDiscrimExploreP-15.10.21.csv;water ad. lib. for 4 days, on third day mice moved to a different room, same cycle
 98;data/raw/AGC2VolProbDiscrim-15.10.22.csv;
 99;data/raw/AGC2VolProbDiscrim-15.10.23.csv;
 100;data/raw/AGC2VolProbDiscrim-15.10.24.csv;
@@ -110,10 +110,10 @@ day;path;comments
 107;data/raw/AGC2VolProbDiscrim-15.10.31.csv;
 108;data/raw/AGC2VolProbDiscrim-15.11.01.csv;
 109;data/raw/AGC2VolProbDiscrim-15.11.02.csv;
-110;data/raw/AGC2VolProbDiscrim-15.11.03.csv;
+110;data/raw/AGC2VolProbDiscrim-15.11.03.csv;most mice's baseline conditions were repeated due to unusually few visits in the previous days. Only the repeats included in the analysis
 111;data/raw/AGC2VolProbDiscrim-15.11.04.csv;
-112;data/raw/VolProbDiscrimExplore-15.10.11.csv;
-113;data/raw/VolProbDiscrimExplore-15.10.12.csv;altered training procedure by including an extra valve clicking phase
+112;data/raw/VolProbDiscrimExplore-15.10.11.csv;training procedure needed to be altered by including an extra valve clicking phase, prior to this one (data excluded here)
+113;data/raw/VolProbDiscrimExplore-15.10.12.csv;
 114;data/raw/VolProbDiscrim-15.10.13.csv;
 115;data/raw/VolProbDiscrim-15.10.14.csv;
 116;data/raw/VolProbDiscrim-15.10.15.csv;
