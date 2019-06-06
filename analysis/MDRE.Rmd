@@ -524,27 +524,22 @@ exp4_diff %>%
 
 ## Decision models of two-dimensional choice
 
-We based our decision models on the Scalar Utility Theory (SUT, @kacelnik_risky_1998; @rosenstrom_scalar_2016), which models memory traces for reward amounts as normal distributions centered around the remembered value (e.g. volume). The scalar property is implemented by setting the standard deviations of these distributions to be proportional to their means. Choice can then be modeled by taking a single sample from each distribution and selecting the option with the larger sample.   
-As previously explained, the discrimination performance of reward probability can be reasonably predicted by the relative intensity of the two options [@rivalan_principles_2017]. This suggests that the memory traces of reward probabilities or of overall utility also exhibit the scalar property, so that discrimination of small probabilities (e.g. 0.2 vs. 0.5, rel.int. = 0.86) is easier  than discrimination of large probabilities (e.g. 0.5 vs. 0.8, rel.int. = 0.46). Consequently, discrimination (of either volumes or probabilities) when options vary along a single dimension can be modeled by SUT.  
+We based our decision models on the Scalar Utility Theory (SUT, @kacelnik_risky_1998; @rosenstrom_scalar_2016), which models memory traces for reward amounts as normal distributions rather than point estimates. The scalar property is implemented by setting the standard deviations of these distributions to be proportional to their means. Choice between two options with different amounts can be modelled by taking a single sample from each memory trace distribution and selecting the option with the larger sample.   
+As previously explained, the discrimination performance of reward probability can be reasonably predicted by the relative intensity of the two options [@rivalan_principles_2017]. This suggests that the memory traces of reward probabilities also exhibit the scalar property, so that discrimination of small probabilities (e.g. 0.2 vs. 0.5, rel.int. = 0.86) is easier  than discrimination of large probabilities (e.g. 0.5 vs. 0.8, rel.int. = 0.46). Consequently, discrimination (of either volumes or probabilities) when options vary along a single dimension can be modelled by SUT.  
+In order to extend the model for multi-dimensional choice situations, we implemented six variations that differed in the integration of information from the volume and probability dimensions (Table \@ref(tab:modTable)). The information from the different reward dimensions was used to obtain for each choice option a *remembered value* (utility), which exhibited the scalar property. Choice was simulated by single sampling from the remembered value distributions.  
 
-We next extend this model for multi-dimensional choice situations. We considered various implementations of the base SUT model described above that differed in the integration of information from the volume and probability dimensions. These models were:  
+|model | description | remembered value | criterion |
+|------|-------------|------------------|-----------|
+|1 | scalar expected value | $\pi N(v,\gamma \cdot v)$ | - |
+|2 | hurdle                | $N(\pi, \gamma \cdot \pi)\times N(v, \gamma \cdot v)$ | - |
+|3 | random dimension      | $N(r, \gamma \cdot r)$ | $\theta$ = 0.5 |
+|4 | winner-takes-all      | $N(r, \gamma \cdot r)$ | $\theta$ = 1 |
+|5 | probability first     | $N(r, \gamma \cdot r)$| if $s(\pi) > 0.8$ then $r = \pi$, if $s(v) > 0.8$ then $r = v$, otherwise $\theta$ = 0.5 |
+|6 | volume first          | $N(r, \gamma \cdot r)$| if $s(v) > 0.8$ then $r = v$ , if  $s(\pi) > 0.8$ then $r = \pi$ , otherwise $\theta$ = 0.5 |
+  Table: (\#tab:modTable) Decision-making models. 
+    
+  Note: $v$ - volume estimate; $\pi$ - probability estimate; $\gamma$ - coefficient of variation; $r$ - either $v$ or $\pi$ depending on the *criterion*; $\theta$ - probability of selecting the dimension with the higher salience; $s(r)$ - salience of dimension $r$, calculated as $\frac{max(r) - min(r)}{\overline{r}}$, where $n$ is the number of options, and $\overline{r}$ is the average of $r$ over all options. 
 
-1. *Scalar expected value model*. There is a single memory trace for each option and it consists in the simple product of the estimate for the volume and the estimate for the probability (expected value). The scalar property is implemented as $\pi N(v,\gamma \cdot v)$, where $v$ is the volume estimate, $\pi$ is the probability estimate, and $\gamma$ is a free parameter, the coefficient of variation. This model thus utilizes information from all dimensions for every decision.    
-
-2. *Hurdle model*. There are traces for each dimension for every option, where each trace exhibits the scalar property independently and the value is obtained by simple multiplication of the traces for each dimension: $N(\pi, \gamma \cdot \pi)\times N(v, \gamma \cdot v)$. This model also utilizes information from all dimensions for every decision. Although this model allows each dimension to have its own scalar factor, e.g. $\gamma_{\pi} \neq \gamma_{v}$, for the sake of simplicity we assume that they are both equal.   
-
-The memory traces in the remaining models are identical to the traces in model 2, but these models usually consider only a single dimension.  
-  
-3. *Random dimension model*. Each decision is based on a single dimension, selected with probability 0.5.  
-
-4. *Winner-takes-all model*. Each decision is based only on the dimension with the higher subjective salience. The salience for a vector of samples $(S_i)$ from the underlying memory traces along one dimension, e.g. volume $v = (S_{1}, S_{2}, ..., S_{n})$, is calculated as $n\cdot\frac{max(v) - min(v)}{\sum_{i=1}^{n}{v}}$, where $n$ is the number of options. In the case of $n = 2$, the salience is equivalent to the previously described relative intensity measure. For dimensions of equal salience the model reverts to model 3.  
-  
-The last two models are examples of a lexicographic rule, in which the dimensions are checked in a specific order. If the salience of a dimension is higher than a given threshold, then a decision is made based only on this dimension. Otherwise the next-order dimension is checked. If all dimensions have saliences below the threshold, the model reverts to model 3.  The value of the threshold was 0.8, the psychometric function threshold for probability [@rivalan_principles_2017].  
-
-5. *Probability first model*. Probability is checked first, then volume.   
-
-6. *Volume first model*. Volume is checked first, then probability.  
-  
 ```{r}
 
 #### gamma baseline fit for probability
@@ -703,18 +698,6 @@ ranks_coh13 <- RMSEs_cohorts %>%
   select(-cage1) %>%
   group_by(experiment) %>%
   rmse_ranks()
-```
-
-All models described above share the same free parameter, the scalar factor $\gamma$. In order to obtain estimates for $\gamma$, we first fitted each models to the probability baseline discrimination performances of all mice in experiments 1, and 4 (conditions BPV1 and BPV2). The resulting median estimates (across animals) for $\gamma$ were then used as the values of the free parameter in out-of-sample tests of the six models. With each model  we generated 100 choices by 100 individuals for each experimental condition. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1 and 4. Finally, we ranked the models by the RMSE scores. Since we wanted to analyze asymptotic choice, we did not model learning but assumed that the memory traces of the agents were accurate estimates of the physical reward properties.  
-  
-```{r modTable}
-data.frame(model = 1:6,
-           description = c("scalar expected value", "hurdle", "random dimension",
-                           "winner takes it all", "probability first",
-                           "volume first")) %>%
-  knitr::kable(booktabs = TRUE, caption = "Decision-making models") %>%
-  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
-                full_width = F)
 ```
 
 ```{r simRankTable}
@@ -889,7 +872,42 @@ Data analysis was done using R [@r_development_core_team_r:_2019]. When comparin
 
 ## Simulations
 
+Simulations were done in R [@r_development_core_team_r:_2019]. Code is available at zenodo repository xxx. 
 
+### Environment
+
+Each of the experimental conditions was recreated in the simulations as a binary choice task between the high-profitability and the low-profitability options. We did not simulate the two non-rewarding options. Upon a visit by a virtual mouse, a choice option would deliver a reward with its corresponding volume and probability (Table \@ref(tab:conds_tab)). The virtual environment was not spatially and temporally explicit. Thus, no reversal conditions were simulated and the test of each experimental condition consisted in a sequence of 100 choices. All experimental conditions in all four experiments were tested.  
+
+### Virtual mice
+
+For simplicity and in order to simulate post-acquisition discrimination performance, we assumed that each mouse had a precise estimate of each of the two reward dimensions for both choice options. The virtual mice thus began each experimental condition in a learned state and (further) learning was not simulated.  
+From its memory traces a virtual mouse generated one *remembered value* distribution for each choice option, according to one of six different rules (models, Table \@ref(tab:modTable)). Action selection was then implemented by taking a single sample from each distribution and selecting the option with the larger sample.  
+
+### Remembered value models
+
+All six models implemented the *scalar property* from the Scalar Utility Theory (SUT, @kacelnik_risky_1998; @rosenstrom_scalar_2016), because the remembered value was modelled as a normal distribution with a standard deviation proportional to its mean. However, the models differed in the way information from the two reward dimensions was used (either through integration or heuristics).   
+
+These models were:  
+
+1. *Scalar expected value model*. There is a single memory trace for each option and it consists in the simple product of the estimate for the volume and the estimate for the probability (expected value). The scalar property is implemented as $\pi N(v,\gamma \cdot v)$, where $v$ is the volume estimate, $\pi$ is the probability estimate, and $\gamma$ is a free parameter, the coefficient of variation. This model thus utilizes information from all dimensions for every decision.    
+
+2. *Hurdle model*. There are traces for each dimension for every option, where each trace exhibits the scalar property independently and the value is obtained by simple multiplication of the traces for each dimension: $N(\pi, \gamma \cdot \pi)\times N(v, \gamma \cdot v)$. This model also utilizes information from all dimensions for every decision. Although this model allows each dimension to have its own scalar factor, e.g. $\gamma_{\pi} \neq \gamma_{v}$, for the sake of simplicity we assume that they are both equal.   
+
+The memory traces in the remaining models are identical to the traces in model 2, but these models usually consider only a single dimension.  
+  
+3. *Random dimension model*. Each decision is based on a single dimension, selected with probability 0.5.  
+
+4. *Winner-takes-all model*. Each decision is based only on the dimension with the higher subjective salience. The salience for a vector of samples $(S_i)$ from the underlying memory traces along one dimension, e.g. volume $v = (S_{1}, S_{2}, ..., S_{n})$, is calculated as $\frac{max(v) - min(v)}{\overline{v}}$, where $n$ is the number of options. In the case of $n = 2$, the salience is equivalent to the previously described relative intensity measure. For dimensions of equal salience the model reverts to model 3.  
+  
+The last two models are examples of a lexicographic rule, in which the dimensions are checked in a specific order. If the salience of a dimension is higher than a given threshold, then a decision is made based only on this dimension. Otherwise the next-order dimension is checked. If all dimensions have saliences below the threshold, the model reverts to model 3.  The value of the threshold was 0.8, the psychometric function threshold for probability [@rivalan_principles_2017].  
+
+5. *Probability first model*. Probability is checked first, then volume.   
+
+6. *Volume first model*. Volume is checked first, then probability.  
+
+### Model fits
+
+All models described above share the same free parameter, the scalar factor $\gamma$. In order to obtain estimates for $\gamma$, we first fitted each models to the probability baseline discrimination performances of all mice in experiments 1, and 4 (conditions BPV1 and BPV2). The resulting median estimates (across animals) for $\gamma$ were then used as the values of the free parameter in out-of-sample tests of the six models. For each of the experimental conditions in the four experiments (Table \@ref(tab:conds_tab)) and for each of the six models we simulated 100 choices by 100 (identically parametrized) mice. Over the 100 choices we calculated the discrimination performance for each mouse and then used the median of the individual discrimination performances as the model prediction. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1 and 4. Finally, we ranked the models by the RMSE scores.
 
 \newpage
 # Appendix {-}
