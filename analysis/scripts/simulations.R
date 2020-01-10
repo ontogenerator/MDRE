@@ -1,64 +1,298 @@
 library(tidyverse)
+library(assertthat)
 
-dim_splitter <- function(x, dims) {
-  if (length(x) %% dims != 0) stop("Means have to be a multiple of Dimensions (dims)")
+#### helper functions
 
-  if (dims > 1) return(unname(split(x, ceiling(seq_along(x)/(length(x)/dims)))))
-  x
-}
-
-sampler <- function(probs, n_sims = 1) {
+# sample from a list of n options (represented by a vector of probabilities) with replacement
+prob_sample <- function(probs, n_sims = 1) {
   sample(length(probs), size = n_sims, prob = probs, replace = TRUE)
 }
 
-rint <- function(vec) { # generalized relative intensity function for n inputs
+# calculate the relative intensity difference / mean ratio
+get_rint <- function(vec) { # generalized relative intensity function for n inputs
+  if (max(vec) == min(vec) & min(vec) == 0) return(0)
   length(vec) * (max(vec) - min(vec)) / sum(vec)
 }
 
-Which_hurdle <- function(means, dims = 2, gamma, beta) {
-#
+# convert a vector of vols and probabilities to a list of reward properties
+to_rew_list <- function(vols, probs) {
+  sp <- sum(probs)
+
+  if (sp > 1) {
+    stop("Probabilities must sum to at most one 1")
+  } else if (sp < 1) {
+    vols <- c(vols, 0)
+    probs <- c(probs, 1 - sp)
+  }
+  list(vols = vols, probs = probs)
+}
+
+# # stochastic prob_sample
+# st_sample <- function(probs) {
 #   p <- runif(1, 0, 1)
-#   n_options <- length(means)/dims
+#   upper_probs <- cumsum(probs)
+#   lower_probs <- lag(upper_probs, default = 0)
+#   which(map2_lgl(.x = lower_probs, .y = upper_probs, ~between(p, .x, .y)))
+# }
+
+
+### Cumulative Prospect Theory functions
+get_utility <- function(v, alpha, ref, kappa) {
+  get_utility_hlp <- function(v, alpha = 1, ref = 0, kappa = 1) {
+    if (v > ref) {
+      return((v - ref)^alpha)
+    } else {
+      return(-kappa*(ref - v)^alpha)
+    }
+  }
+  map_dbl(v, get_utility_hlp, alpha = alpha, ref = ref, kappa = kappa)
+}
+
+get_weighted_probs <- function(p, beta, delta) {
+  get_w_p_hlp <- function(p, beta = beta, delta = delta) {
+    if (p == 0) return(0)
+    exp(-beta*(-log(p))^delta)
+  }
+  map_dbl(p, get_w_p_hlp, beta = beta, delta = delta)
+}
+
+get_cum_weights <- function(p, beta, delta) {
+  p_1 <- get_weighted_probs(p[1], beta = beta, delta = delta)
+  p_cum <- get_weighted_probs(cumsum(p), beta = beta, delta = delta) -
+    get_weighted_probs(lag(cumsum(p), default = 0), beta = beta, delta = delta)
+  p_cum[1] <- p_1
+  p_cum
+}
+
+# rew_ls <- to_rew_list(vols, probs)
+
+get_cum_utility <- function(rew_ls, ref, maxu) {
+
+  sum(get_utility(rew_ls$vols, alpha = alpha, ref = ref, kappa = kappa) *
+        get_cum_weights(rew_ls$probs, beta = beta, delta = delta)) / maxu
+
+}
+
+# decision function from Constantinople et al. 2019
+choose_CPT <- function(rew_ls1, rew_ls2, temp, lapse, ref, maxu) {
+
+  delta_value <- get_cum_utility(rew_ls1, ref = ref, maxu = maxu) - get_cum_utility(rew_ls2, ref = ref, maxu = maxu)
+
+  prob1 <- lapse + ((1 - 2*lapse)/(1 + exp(-1 / temp * delta_value)))
+  p <- runif(1, 0, 1)
+
+  if (p > prob1) return(2)
+
+  1
+}
+
 #
-#   if (p < lapse) return(sample(1:n_options, 1) - 1)
-  # gamma <- gamma*0.75 - 0.1*gamma
-  # gamma <- gamma - 0.2
-  vals <- rnorm(means, mean = means, sd = beta + gamma * abs(means))
-  vals <- dim_splitter(vals, dims)
+# u_misses <- function(rew_ls, gamma, lapse, transform_probs = FALSE) {
+#   vols <- pluck(rew_ls, "vols")
+#   probs <- pluck(rew_ls, "probs")
+#
+#   if (transform_probs) probs <- cum_weights(probs, beta = beta, delta = delta)
+#
+#
+#   misses <- 1 / (probs + 0.1 * rnorm(1))
+#   u <- vols / misses
+#   u <- rnorm(length(u), mean = u, sd = lapse + abs(u) * gamma)
+#   sum(u)
+# }
+# scalar expected value
+u_sut <- function(rew_ls, gamma, lapse, transform_probs = FALSE) {
+  vols <- pluck(rew_ls, "vols")
+  probs <- pluck(rew_ls, "probs")
 
-  res <- map_dbl(transpose(vals), ~prod(unlist(.)))
-  return(which(res == max(res)) - 1)
+  if (transform_probs) probs <- cum_weights(probs, beta = beta, delta = delta)
 
+  u <- probs *
+    rnorm(length(vols), mean = vols, sd = lapse + abs(vols) * gamma)
+  sum(u)
 }
 
-Which_val <- function(means, dims = 2, gamma, beta) {
-  # p <- runif(1, 0, 1)
-  # n_options <- length(means)/dims
-  #
-  # if (p < lapse) return(sample(1:n_options, 1) - 1)
+# hurdle utility
+u_sut2 <- function(rew_ls, gamma, lapse, transform_probs = FALSE) {
+  vols <- pluck(rew_ls, "vols")
+  probs <- pluck(rew_ls, "probs")
 
-  vals <- dim_splitter(means, dims)
+  if (transform_probs) probs <- cum_weights(probs, beta = beta, delta = delta)
 
-  vals <- map_dbl(transpose(vals), ~prod(unlist(.)))
-  res <- rnorm(vals, mean = vals, sd = beta + gamma * abs(vals))
-  return(which(res == max(res)) - 1)
 
+  u <- rnorm(length(vols), mean = vols, sd = lapse + abs(vols) * gamma) *
+    rnorm(length(probs), mean = probs, sd = lapse + abs(probs) * gamma)
+  sum(u)
 }
 
-Which_SUT <- function(means, dims = 2, gamma, beta) {
-  # p <- runif(1, 0, 1)
-  # n_options <- length(means)/dims
-  #
-  # if (p < lapse) return(sample(1:n_options, 1) - 1)
 
-  vals <- dim_splitter(means, dims)
+u_sutn <- function(rew_ls, gamma, lapse, transform_probs = FALSE) {
+  vols <- pluck(rew_ls, "vols")
+  probs <- pluck(rew_ls, "probs")
 
-  vals[[1]] <- rnorm(vals[[1]], mean = vals[[1]], sd = beta + gamma * abs(vals[[1]]))
+  if (transform_probs) probs <- cum_weights(probs, beta = beta, delta = delta)
 
-  res <- map_dbl(transpose(vals), ~prod(unlist(.)))
-  return(which(res == max(res)) - 1)
-
+  u <- rnorm(length(vols), mean = vols, sd = lapse + abs(vols) * gamma)
+  u[prob_sample(probs)]
 }
+
+
+# scalar utility from random dimension
+u_rd <- function(rew_ls, gamma, lapse, p_vol = 0.5, transform_probs = FALSE, subj_val = FALSE) {
+  vols <- pluck(rew_ls, "vols")
+  probs <- pluck(rew_ls, "probs")
+
+  if (transform_probs & !subj_val) probs <- cum_weights(probs, beta = beta, delta = delta)
+
+  p <- runif(1, 0, 1)
+
+  if (p < p_vol) {
+    dim <- vols[1]
+  } else {
+    dim <- probs[1]
+  }
+  if (subj_val) {
+    return(dim)
+  }
+  rnorm(1, mean = dim, sd = lapse + abs(dim) * gamma)
+}
+
+# tibble(n = 1:1000) %>%
+#   rowwise() %>%
+#   mutate(half = u_sut(to_rew_list(vols = vols, probs = probs), gamma = gamma, lapse = lapse),
+#          whole = u_sut(to_rew_list(vols = vols1, probs = probs1), gamma = gamma, lapse = lapse)) %>%
+#   ggplot() +
+#   geom_boxplot(aes(1, half)) +
+#   geom_boxplot(aes(3, whole))
+
+#
+
+u_all <- function(options_ls, args) {
+  gamma <- pluck(args, "gamma")
+  lapse <- pluck(args, "lapse")
+  vols <- map(options_ls, pluck("vols"))
+
+  modify_depth(options_ls, 2, pluck(1)) %>%
+    modify_depth(2, ~rnorm(1, mean = ., sd = lapse + abs(.) * gamma))
+}
+
+update_args <- function(options_ls, u_fun, args) {
+
+  sal_vol <- map(options_ls, pluck("vols")) %>%
+    map_dbl(1) %>%
+    get_rint()
+
+  sal_prob <- map(options_ls, pluck("probs")) %>%
+    map_dbl(1) %>%
+    get_rint()
+
+  v_threshold <- pluck(args, "v_threshold")
+  if (is_null(v_threshold)) v_threshold <- 0.8
+  p_threshold <- pluck(args, "p_threshold")
+  if (is_null(p_threshold)) p_threshold <- 0.8
+
+  p_vol <- case_when(
+      # u_fun == "u_sal_wta" & sal_prob == sal_vol ~ 0.5,
+      u_fun == "u_sal_wta" & sal_vol > sal_prob ~ 1,
+      u_fun == "u_sal_wta" & sal_vol < sal_prob ~ 0,
+      u_fun == "u_sal_vfirst" & sal_vol > v_threshold ~ 1,
+      u_fun == "u_sal_vfirst" & sal_vol < v_threshold &
+        sal_prob > p_threshold ~ 0,
+      u_fun == "u_sal_pfirst" & sal_prob > p_threshold ~ 0,
+      u_fun == "u_sal_pfirst" & sal_prob < p_threshold &
+        sal_vol > v_threshold ~ 1,
+      TRUE ~ 0.5
+    )
+
+  list_modify(args, p_vol = p_vol, subj_val = TRUE, v_threshold = NULL, p_threshold = NULL)
+}
+
+
+# args have to be a list
+choose_SUT <- function(options_ls, u_fun = "u_sut", args) {
+
+  if (str_detect(u_fun, "sal")) {
+    options_ls <- u_all(options_ls, args)
+    args <- update_args(options_ls, u_fun, args)
+    u_fun <- "u_rd"
+  }
+
+  u <- map_dbl(options_ls, ~exec(u_fun, rew_ls = ., !!!args))
+
+  choice <- which(u == max(u))
+
+  if (length(choice) > 1) return(sample(choice, 1))
+
+  choice
+}
+
+# gamma <- 0.5
+#
+option_1 <- to_rew_list(c(20, 0), c(0.2, 0.8))
+option_2 <- to_rew_list(c(4, 0), c(0.5, 0.5))
+options_ls <- list(option_1, option_2)
+# update_args(options_ls, u_fun = "u_sal_vfirst", list(gamma = gamma, lapse = lapse, v_threshold = 0.7, p_threshold = 0.7))
+
+# choose_SUT(options_ls, u_fun = "u_sal_vfirst", list(gamma = gamma, lapse = lapse, v_threshold = v_threshold, p_threshold = p_threshold))
+
+gamma <- 0.95
+# salience sims#########
+n_sim <- 10000
+tibble(conds = factor(c(1, 2, 3, 4, 5, 6)), vol1 = c(4, 4, 20, 4, 4, 4), vol2 = c(4, 20, 20, 4, 4, 20),
+       prob1 = c(0.2, 0.2, 1, 0.2, 0.2, 0.2), prob2 = c(0.2, 1, 1, 1, 0.5, 0.5)) %>%
+  slice(rep(1:n(), each = n_sim)) %>%
+  mutate_if(is.numeric, ~rnorm(., mean = ., sd = lapse + gamma * .)) %>%
+  rowwise() %>%
+  mutate(sal_vol = get_rint(c(vol1, vol2)),
+         sal_prob = get_rint(c(prob1, prob2))) %>%
+  ungroup() %>%
+  group_by(conds) %>%
+  summarise(overt_vol = sum(sal_vol > 0.8)/n_sim,
+            overt_prob = sum(sal_prob > 0.8)/n_sim,
+            vol_over_prob = sum(sal_vol > sal_prob)/n_sim)
+(1 - 0.286) * 0.86
+# choose_hurdle <- function(means, dims = 2, gamma, lapse) {
+# #
+# #   p <- runif(1, 0, 1)
+# #   n_options <- length(means)/dims
+# #
+# #   if (p < lapse) return(sample(1:n_options, 1) - 1)
+#   # gamma <- gamma*0.75 - 0.1*gamma
+#   # gamma <- gamma - 0.2
+#   vals <- rnorm(means, mean = means, sd = lapse + gamma * abs(means))
+#   vals <- dim_splitter(vals, dims)
+#
+#   res <- map_dbl(transpose(vals), ~prod(unlist(.)))
+#   return(which(res == max(res)) - 1)
+#
+# }
+#
+# choose_val <- function(means, dims = 2, gamma, lapse) {
+#   # p <- runif(1, 0, 1)
+#   # n_options <- length(means)/dims
+#   #
+#   # if (p < lapse) return(sample(1:n_options, 1) - 1)
+#
+#   vals <- dim_splitter(means, dims)
+#
+#   vals <- map_dbl(transpose(vals), ~prod(unlist(.)))
+#   res <- rnorm(vals, mean = vals, sd = lapse + gamma * abs(vals))
+#   return(which(res == max(res)) - 1)
+#
+# }
+
+# choose_SUT <- function(means, dims = 2, gamma, lapse) {
+#   # p <- runif(1, 0, 1)
+#   # n_options <- length(means)/dims
+#   #
+#   # if (p < lapse) return(sample(1:n_options, 1) - 1)
+#
+#   vals <- dim_splitter(means, dims)
+#
+#   vals[[1]] <- rnorm(vals[[1]], mean = vals[[1]], sd = lapse + gamma * abs(vals[[1]]))
+#
+#   res <- map_dbl(transpose(vals), ~prod(unlist(.)))
+#   return(which(res == max(res)) - 1)
+# }
 
 
 # p <- 0.1
@@ -91,221 +325,393 @@ Which_SUT <- function(means, dims = 2, gamma, beta) {
 #   return(which(res == max(res)) - 1)
 # }
 
-Which_randdim <- function(means, dims = 2, gamma, beta, weightp = rep(1, dims)) {
-#
-  n_options <- length(means)/dims
-#   p <- runif(1, 0, 1)
-
-# gamma <- gamma - 0.4
-#   if (p < lapse) return(sample(1:n_options, 1) - 1)
-
-  vals <- rnorm(means, mean = means, sd = beta + gamma * abs(means))
-  vals <- dim_splitter(vals, dims)
-
-  res <- vals[[sampler(weightp)]]
-
-  if (length(which(res == max(res))) > 1) {
-    return(sample(1:n_options, 1) - 1)
-  } else {
-    return(which(res == max(res)) - 1)
-  }
-}
-
-dims <- 2
-means <- c(5, 12.5, 0.5, 0.5)
-
-Which_WTA <- function(means, dims = 2, gamma, beta) {
-
-  # p <- runif(1, 0, 1)
-  # n_options <- length(means)/dims
-  #
-  # if (p < lapse) return(sample(1:n_options, 1) - 1)
-  # gamma <- gamma - 0.2
-  vals <- rnorm(means, mean = means, sd = beta + gamma * abs(means))
-  vals <- dim_splitter(vals, dims)
-  salience <- map_dbl(vals, rint)
-
-  salience <- ifelse(is.nan(salience), 0, salience)
-  if (sd(salience) == 0) return(Which_randdim(means, dims = dims, gamma = gamma, beta = beta))
-
-  dim_salient <- which(salience == max(salience))
-  res <- vals[[dim_salient]]
-  return(which(res == max(res)) - 1)
-}
-
-
-Which_lxgr <- function(means, dims = 2, gamma, beta, threshold = 0.8, reverse = FALSE) {
-  # lexicographic rule with one dimension checked first,
-  # then if it is not informative, check the other, the dimensions should be listed
-  # in their lexicographic order
-#
-#   p <- runif(1, 0, 1)
+# choose_randdim <- function(means, dims = 2, gamma, lapse, weightp = rep(1, dims)) {
+# #
 #   n_options <- length(means)/dims
+# #   p <- runif(1, 0, 1)
 #
-#   if (p < lapse) return(sample(1:n_options, 1) - 1)
-  # gamma <- gamma - 0.2
-  vals <- rnorm(means, mean = means, sd = beta + gamma * abs(means))
-  vals <- dim_splitter(vals, dims)
-  salience <- map_dbl(vals, rint)
+# # gamma <- gamma - 0.4
+# #   if (p < lapse) return(sample(1:n_options, 1) - 1)
+#
+#   vals <- rnorm(means, mean = means, sd = lapse + gamma * abs(means))
+#   vals <- dim_splitter(vals, dims)
+#
+#   res <- vals[[prob_sample(weightp)]]
+#
+#   if (length(which(res == max(res))) > 1) {
+#     return(sample(1:n_options, 1) - 1)
+#   } else {
+#     return(which(res == max(res)) - 1)
+#   }
+# }
 
-  if (reverse) {
-    salience <- rev(salience)
-    vals <- rev(vals)
+# dims <- 2
+# means <- c(5, 12.5, 0.5, 0.5)
+
+# choose_WTA <- function(means, dims = 2, gamma, lapse) {
+#
+#   # p <- runif(1, 0, 1)
+#   # n_options <- length(means)/dims
+#   #
+#   # if (p < lapse) return(sample(1:n_options, 1) - 1)
+#   # gamma <- gamma - 0.2
+#   vals <- rnorm(means, mean = means, sd = lapse + gamma * abs(means))
+#   vals <- dim_splitter(vals, dims)
+#   salience <- map_dbl(vals, get_rint)
+#
+#   salience <- ifelse(is.nan(salience), 0, salience)
+#   if (sd(salience) == 0) return(choose_randdim(means, dims = dims, gamma = gamma, lapse = lapse))
+#
+#   dim_salient <- which(salience == max(salience))
+#   res <- vals[[dim_salient]]
+#   return(which(res == max(res)) - 1)
+# }
+
+
+# choose_lxgr <- function(means, dims = 2, gamma, lapse, threshold = 0.8, reverse = FALSE) {
+#   # lexicographic rule with one dimension checked first,
+#   # then if it is not informative, check the other, the dimensions should be listed
+#   # in their lexicographic order
+# #
+# #   p <- runif(1, 0, 1)
+# #   n_options <- length(means)/dims
+# #
+# #   if (p < lapse) return(sample(1:n_options, 1) - 1)
+#   # gamma <- gamma - 0.2
+#   vals <- rnorm(means, mean = means, sd = lapse + gamma * abs(means))
+#   vals <- dim_splitter(vals, dims)
+#   salience <- map_dbl(vals, get_rint)
+#
+#   if (reverse) {
+#     salience <- rev(salience)
+#     vals <- rev(vals)
+#   }
+#
+#   while (length(salience) > 0) {
+#
+#     if (salience[[1]] > threshold) {
+#       res <- vals[[1]]
+#       return(which(res == max(res)) - 1)
+#
+#     } else {
+#       salience <- salience[-1]
+#       vals <- vals[-1]
+#     }
+#   }
+#   if (length(salience) == 0) return(choose_randdim(means, dims = dims, gamma = gamma, lapse = lapse))
+# }
+#
+# choose_prob_first <- partial(choose_lxgr, reverse = TRUE)
+
+exp_tbl <- function(data_tbl, n_pokes = 100, n_inds = 100) {
+  # check to see if 'cond' column exists
+  exp_hlp <- function(data_tbl, n) {
+    data_tbl %>%
+      slice(rep(1:n(), each = n))
   }
 
-  while (length(salience) > 0) {
+  # tbl_size <- nrow(data_tbl) * n_choices * n_inds
+  # m <- matrix(0, nrow = tbl_size, ncol = n_options)
+  # colnames(m) <- map_chr(c(1:n_options), ~paste0("est", .x))
 
-    if (salience[[1]] > threshold) {
-      res <- vals[[1]]
-      return(which(res == max(res)) - 1)
-
-    } else {
-      salience <- salience[-1]
-      vals <- vals[-1]
-    }
-  }
-  if (length(salience) == 0) return(Which_randdim(means, dims = dims, gamma = gamma, beta = beta))
+  data_tbl %>%
+    exp_hlp(n_pokes) %>%
+    group_by(cond, experiment) %>%
+    mutate(n_poke = 1:n()) %>%
+    exp_hlp(n_inds) %>%
+    group_by(cond, experiment, n_poke) %>%
+    mutate(ind = 1:n()) %>%
+    arrange(ind, experiment, cond, n_poke) %>%
+    # bind_cols(as_tibble(m)) %>%
+    ungroup()
 }
 
-Which_prob_first <- partial(Which_lxgr, reverse = TRUE)
+# modeller <- function(input_tb, n_mice, n_choices, choice_fun,
+#                      input_vec,  model_num, dims, gamma, lapse) {
+#
+#   input_expr <- enquos(input_vec)
+#
+#   input_tb %>%
+#     rowwise() %>%
+#     mutate(mod = list(map(1:(n_mice*n_choices),
+#                           ~ exec(choice_fun, !!!input_expr, dims = dims, gamma = gamma,
+#                                         lapse = lapse)))) %>%
+#     unnest(mod) %>%
+#     mutate(id = rep(rep(1:n_mice, each = n_choices), nrow(input_tb)),
+#            model = model_num) %>%
+#     group_by(id, experiment, cond, model) %>%
+#     summarise(performance = mean(as.numeric(mod)))
+# }
 
-modeller <- function(input_tb, n_mice, n_choices, choice_fun,
-                     input_vec,  model_num, dims, gamma, beta) {
+#### free parameters
+v_max <- 20
+alpha <- 0.7
+kappa <- 1.7
+beta <- 0.5
+delta <- 0.9
+temp <- 2
+temp <- 1.8
+lapse <- 0
+ref <- 0
+gamma_sut <- 0.95
+gamma_2scal <- 0.6
+gamma_ru <- 0.5
+p_vol <- 0.25
+gamma_wta <- 0.75
+gamma_pfirst <- 0.95
+gamma_vfirst <- 0.5
+p_threshold <- v_threshold <- 0.8
 
-  input_expr <- enquos(input_vec)
+n_pokes <- 100
+n_inds <- 100
+u_max <- get_utility(v_max, alpha, ref, kappa)
+sesoi <- 0.1
 
-  input_tb %>%
-    rowwise() %>%
-    mutate(mod = list(map(1:(n_mice*n_choices),
-                          ~ rlang::exec(choice_fun, !!!input_expr, dims = dims, gamma = gamma,
-                                        beta = beta)))) %>%
-    unnest(mod) %>%
-    mutate(id = rep(rep(1:n_mice, each = n_choices), nrow(input_tb)),
-           model = model_num) %>%
-    group_by(id, experiment, cond, model) %>%
-    summarise(performance = mean(as.numeric(mod)))
-}
 
-dims <- 2
-# lapse <- 0.09
-# lapse <- 0
-# cv <- 0.87
-beta <- 0
-# gamma <- 0.9
-n_mice <- 100
-n_choices <- 100
+#### experiment 1
+exp1 <- tibble(cond = c("BPV1", "BPV2", "BVP1", "BVP2", "C", "I"),
+               vol1 = c(4, 20, 4, 4, 4, 4),
+               vol2 = c(4, 20, 20, 20, 20, 20),
+               prob1 = c(0.2, 0.2, 0.2, 0.5, 0.2, 0.5),
+               prob2 = c(0.5, 0.5, 0.2, 0.5, 0.5, 0.2),
+               experiment = 1)
 
-sim_conds <- conds_tab %>%
+exp2 <- tibble(cond = c("BPV1", "BPV2", "BVP1", "BVP2", "C", "I"),
+               vol1 = c(4, 20, 4, 4, 4, 4),
+               vol2 = c(4, 20, 20, 20, 20, 20),
+               prob1 = c(0.2, 0.2, 0.2, 1, 0.2, 1),
+               prob2 = c(1, 1, 0.2, 1, 1, 0.2),
+               experiment = 2)
+
+exp3 <- tibble(cond = c("PV1", "PV2", "PV3", "PV4", "VP1", "VP2", "VP3", "VP4"),
+               vol1 = c(4, 10, 15, 20, 4, 4, 4, 4),
+               vol2 = c(4, 10, 15, 20, 10, 10, 10, 10),
+               prob1 = c(0.2, 0.2, 0.2, 0.2, 0.2, 0.5, 0.7, 0.8),
+               prob2 = c(0.5, 0.5, 0.5, 0.5, 0.2, 0.5, 0.7, 0.8),
+               experiment = 3)
+
+mdre <- exp1 %>%
+  bind_rows(exp2, exp3) %>%
+  mutate(cond_num = if_else(vol1 == vol2,
+                            vol1 / 20,
+                            prob1),
+         option_1 = map2(vol1, prob1, to_rew_list),
+         option_2 = map2(vol2, prob2, to_rew_list))
+
+set.seed(42)
+
+
+
+res_test <- mdre %>%
+  # slice(1) %>%
+  exp_tbl(n_pokes = n_pokes, n_inds = n_inds) %>%
+  rowwise() %>%
+  mutate(choice_sev = choose_SUT(list(option_1, option_2),
+                                 u_fun = "u_sut",
+                                 list(gamma = gamma_sut, lapse = lapse)),
+         choice_2scal = choose_SUT(list(option_1, option_2),
+                                  u_fun = "u_sut2",
+                                  list(gamma = gamma_2scal, lapse = lapse)),
+         choice_rd = choose_SUT(list(option_1, option_2),
+                                u_fun = "u_rd",
+                                list(gamma = gamma_ru, lapse = lapse, p_vol = p_vol)),
+         choice_wta = choose_SUT(list(option_1, option_2),
+                                 u_fun = "u_sal_wta",
+                                 list(gamma = gamma_wta, lapse = lapse)),
+         choice_pfirst = choose_SUT(list(option_1, option_2),
+                                    u_fun = "u_sal_pfirst",
+                                    list(gamma = gamma_pfirst, lapse = lapse,
+                                         p_threshold = p_threshold,
+                                         v_threshold = v_threshold)),
+         # choice_cpt = choose_CPT(option_1, option_2, temp = temp,
+         #                         lapse = lapse, ref = ref, maxu = u_max),
+         choice_vfirst = choose_SUT(list(option_1, option_2),
+                                    u_fun = "u_sal_vfirst",
+                                    list(gamma = gamma_vfirst, lapse = lapse,
+                                         p_threshold = p_threshold,
+                                         v_threshold = v_threshold))
+         )
+
+
+simulations <- res_test %>%
+  select(ind, experiment, cond, cond_num, contains("choice")) %>%
+  pivot_longer(cols = contains("choice"), names_to = "model", values_to = "choice2") %>%
+  group_by(ind, experiment, cond, cond_num, model) %>%
+  summarise(performance = mean(choice2 == 2)) %>%
+  mutate(model = str_remove(model, "choice_"))
+
+write.table(simulations, file = paste0(getwd(),"/analysis/data/simulations.csv"),
+            dec = ".", sep = ";")
+
+# simulations <- simulations %>%
+#   ungroup() %>%
+#   mutate(cond = factor(if_else(experiment == 3, str_remove(cond, "B"), cond)))
+
+summ_sims <- simulations %>%
+  group_by(experiment, cond, model) %>%
+  summarise(m_perf = median(performance))
+
+summ_sims <- summ_sims %>%
+  filter(experiment == 1) %>%
+  ungroup() %>%
+  mutate(experiment = 4) %>%
+  bind_rows(summ_sims) %>%
+  arrange(experiment, cond, model)
+
+emp_perf <- summaries %>%
+  filter(!str_detect(cond, "[r]")) %>%
+  select(IdLabel, cohort, experiment, cond, performance)
+
+emp_perf <- emp_perf %>%
   filter(cond == "BVP1") %>%
   mutate(experiment = 2) %>%
-  bind_rows(conds_tab) %>%
-  arrange(experiment, cond)
+  bind_rows(emp_perf) %>%
+  arrange(IdLabel, cohort, cond)
+
+devs <- summ_sims %>%
+  full_join(emp_perf) %>%
+  mutate(deviance = (m_perf - performance)^2,
+         dev = abs(m_perf - performance))
+
+
+RMSEs <- devs %>%
+  filter(!(str_detect(cond, "BP") & experiment != 2)) %>%
+  group_by(experiment, model) %>%
+  summarise(RMSE = sqrt(mean(deviance, na.rm = TRUE))) %>%
+  arrange(experiment, RMSE)
+
+rmse_ranks <- function(tibb) {
+  tibb %>%
+    mutate(rank = rank(RMSE)) %>%
+    ungroup() %>%
+    select(-RMSE) %>%
+    spread(experiment, model)
+}
+
+ranks <- RMSEs %>%
+  rmse_ranks()
+
+
+
+# dims <- 2
+# # lapse <- 0.09
+# # lapse <- 0
+# # cv <- 0.87
+# lapse <- 0
+# # gamma <- 0.9
+# n_mice <- 100
+# n_choices <- 100
+
+# sim_conds <- conds_tab %>%
+#   filter(cond == "BVP1") %>%
+#   mutate(experiment = 2) %>%
+#   bind_rows(conds_tab) %>%
+#   arrange(experiment, cond)
 
 
 # sim_conds <- tibble(experiment = 1, vol = 0.2, vol2 = 1,
 #                     prob = 1, prob2 = c(0.8, 0.66, 0.5, 0.33, 0.2, 0.17, 0.14, 0.11, 0.09),
 #                     cond = prob2)
 
-model_list <- list("Which_SUT", "Which_hurdle", "Which_randdim",
-                   "Which_WTA", "Which_prob_first", "Which_lxgr")
-
-gammas_list <-
-  case_when(
-  model_list == "Which_SUT" | model_list == "Which_prob_first" ~ 0.95,
-  model_list == "Which_randdim" | model_list == "Which_lxgr" ~ 0.5,
-  model_list == "Which_hurdle" | model_list == "Which_WTA" ~ 0.7,
-  TRUE ~ 0.7)
-
-
-
-set.seed(42)
+# model_list <- list("choose_SUT", "choose_hurdle", "choose_randdim",
+#                    "choose_WTA", "choose_prob_first", "choose_lxgr")
+#
+# gammas_list <-
+#   case_when(
+#   model_list == "choose_SUT" | model_list == "choose_prob_first" ~ 0.95,
+#   model_list == "choose_randdim" | model_list == "choose_lxgr" ~ 0.5,
+#   model_list == "choose_hurdle" | model_list == "choose_WTA" ~ 0.7,
+#   TRUE ~ 0.7)
+#
+#
+#
+# set.seed(42)
 # simulations <- map2_df(model_list,
 #                   as.list(1:length(model_list)),
 #                   ~modeller(sim_conds, n_mice = n_mice, n_choices = n_choices,
 #                             choice_fun = .x, input_vec = c(vol, vol2, prob, prob2),
-#                             model_num = .y, dims = dims, gamma = gamma, beta = beta))
+#                             model_num = .y, dims = dims, gamma = gamma, lapse = lapse))
 
-simulations <- pmap_df(list(model_list,
-                       as.list(1:length(model_list)), gammas_list),
-                       ~modeller(sim_conds, n_mice = n_mice, n_choices = n_choices,
-                                 choice_fun = ..1, input_vec = c(vol, vol2, prob, prob2),
-                                 model_num = ..2, dims = dims, gamma = ..3, beta = beta))
+# simulations <- pmap_df(list(model_list,
+#                        as.list(1:length(model_list)), gammas_list),
+#                        ~modeller(sim_conds, n_mice = n_mice, n_choices = n_choices,
+#                                  choice_fun = ..1, input_vec = c(vol, vol2, prob, prob2),
+#                                  model_num = ..2, dims = dims, gamma = ..3, lapse = lapse))
 
-write.table(simulations, file = paste0(getwd(),"/analysis/data/simulations_coh2.csv"),
-           dec = ".", sep = ";")
+# write.table(simulations, file = paste0(getwd(),"/analysis/data/simulations.csv"),
+#            dec = ".", sep = ";")
 
 # write.table(simulations, file = "C:/Users/Vladi/Documents/MDRE/analysis/data/simulations2.csv",
 #            dec = ".", sep = ";")
 
-Which_priority <-
-  function(means, dims = 4, gamma = gamma, beta = beta, threshold = 0.6) {
+# choose_priority <-
+#   function(means, dims = 4, gamma = gamma, lapse = lapse, threshold = 0.6) {
+#
+#     # p <- runif(1, 0, 1)
+#     # n_options <- length(means)/dims
+#     #
+#     # if (p < lapse) return(sample(1:n_options, 1) - 1)
+#
+#     vals <- rnorm(means, mean = means, sd = lapse + gamma * abs(means))
+#     vals <- dim_splitter(vals, dims)
+#     salience <- map_dbl(vals, get_rint)
+#
+#     while (length(salience) > 0) {
+#
+#       if (salience[[1]] > threshold) {
+#         res <- vals[[1]]
+#         return(which(res == max(res)) - 1)
+#
+#       } else {
+#         salience <- salience[-1]
+#         vals <- vals[-1]
+#       }
+#     }
+#     if (length(salience) == 0) return(choose_randdim(means, dims, gamma = gamma, lapse = lapse))
+# }
+#
+#
+# choose_expected <- function(means, dims = 4, gamma = gamma, lapse = lapse) {
+#   # p <- runif(1, 0, 1)
+#   # n_options <- length(means)/dims
+#   #
+#   # if (p < lapse) return(sample(1:n_options, 1) - 1)
+#   gamma <- gamma*0.75 - 0.1*gamma
+#
+#   vals <- dim_splitter(means, dims)
+#   vals <- map_dbl(transpose(vals), ~(unlist(.[1]) * unlist(.[2]) +
+#                                        unlist(.[3]) * unlist(.[4])))
+#   res <- rnorm(vals, mean = vals, sd = lapse + gamma * abs(vals))
+#   return(which(res == max(res)) - 1)
+# }
+#
+# choose_hurdle_n <- function(means, dims = 4, gamma = gamma, lapse = lapse) {
+#   # p <- runif(1, 0, 1)
+#   n_options <- length(means)/dims
+#   #
+#   # if (p < lapse) return(sample(1:n_options, 1) - 1)
+#   # gamma <- gamma*0.75 - 0.1*gamma
+#
+#   vals <- rnorm(means, mean = means, sd = lapse + gamma * abs(means))
+#   vals <- dim_splitter(vals, dims)
+#   p <- runif(n_options, 0, 1)
+#
+#   res <- map2_dbl(transpose(vals), as.list(p), ~dist_picker(.y, unlist(.x)))
+#
+#   if (length(which(res == max(res))) > 1) return(choose_randdim(means, dims, gamma = gamma, lapse = lapse))
+#   return(which(res == max(res)) - 1)
+# }
 
-    # p <- runif(1, 0, 1)
-    # n_options <- length(means)/dims
-    #
-    # if (p < lapse) return(sample(1:n_options, 1) - 1)
 
-    vals <- rnorm(means, mean = means, sd = beta + gamma * abs(means))
-    vals <- dim_splitter(vals, dims)
-    salience <- map_dbl(vals, rint)
-
-    while (length(salience) > 0) {
-
-      if (salience[[1]] > threshold) {
-        res <- vals[[1]]
-        return(which(res == max(res)) - 1)
-
-      } else {
-        salience <- salience[-1]
-        vals <- vals[-1]
-      }
-    }
-    if (length(salience) == 0) return(Which_randdim(means, dims, gamma = gamma, beta = beta))
-}
-
-
-
-Which_expected <- function(means, dims = 4, gamma = gamma, beta = beta) {
-  # p <- runif(1, 0, 1)
-  # n_options <- length(means)/dims
-  #
-  # if (p < lapse) return(sample(1:n_options, 1) - 1)
-  gamma <- gamma*0.75 - 0.1*gamma
-
-  vals <- dim_splitter(means, dims)
-  vals <- map_dbl(transpose(vals), ~(unlist(.[1]) * unlist(.[2]) +
-                                       unlist(.[3]) * unlist(.[4])))
-  res <- rnorm(vals, mean = vals, sd = beta + gamma * abs(vals))
-  return(which(res == max(res)) - 1)
-}
-
-Which_hurdle_n <- function(means, dims = 4, gamma = gamma, beta = beta) {
-  # p <- runif(1, 0, 1)
-  n_options <- length(means)/dims
-  #
-  # if (p < lapse) return(sample(1:n_options, 1) - 1)
-  # gamma <- gamma*0.75 - 0.1*gamma
-
-  vals <- rnorm(means, mean = means, sd = beta + gamma * abs(means))
-  vals <- dim_splitter(vals, dims)
-  p <- runif(n_options, 0, 1)
-
-  res <- map2_dbl(transpose(vals), as.list(p), ~dist_picker(.y, unlist(.x)))
-
-  if (length(which(res == max(res))) > 1) return(Which_randdim(means, dims, gamma = gamma, beta = beta))
-  return(which(res == max(res)) - 1)
-}
-
-
-# Which_SUT_n <- function(means, dims = 4, gamma = gamma, beta = beta) {
+# choose_SUT_n <- function(means, dims = 4, gamma = gamma, lapse = lapse) {
 #   # p <- runif(1, 0, 1)
 #   # n_options <- length(means)/dims
 #   #
 #   # if (p < lapse) return(sample(1:n_options, 1) - 1)
 #
 #   vals <- dim_splitter(means, dims)
-#   vals[[1]] <- rnorm(vals[[1]], mean = vals[[1]], sd = beta + gamma * abs(vals[[1]]))
-#   vals[[3]] <- rnorm(vals[[3]], mean = vals[[3]], sd = beta + gamma * abs(vals[[3]]))
+#   vals[[1]] <- rnorm(vals[[1]], mean = vals[[1]], sd = lapse + gamma * abs(vals[[1]]))
+#   vals[[3]] <- rnorm(vals[[3]], mean = vals[[3]], sd = lapse + gamma * abs(vals[[3]]))
 #   # vals <- rnorm(means, mean = means, sd = cv * abs(means))
 #
 #   res <- map_dbl(transpose(vals), ~(unlist(.[1]) * unlist(.[2]) +
@@ -315,35 +721,36 @@ Which_hurdle_n <- function(means, dims = 4, gamma = gamma, beta = beta) {
 # }
 
 
-dist_picker <- function(p, means) {
-  if (p < means[2]) {
-    return(means[1])
-    } else if (p < means[4] + means[2]) {
-      return(means[3])
-    } else {
-      return(0)
-    }
-  }
+# dist_picker <- function(p, means) {
+#   if (p < means[2]) {
+#     return(means[1])
+#     } else if (p < means[4] + means[2]) {
+#       return(means[3])
+#     } else {
+#       return(0)
+#     }
+#   }
+#
+# unlist(transpose(vals[1]))
+# dims <- 4
+# dist_picker(0.36, unlist(transpose(vals)[1]))
+#
+# choose_SUT_n <- function(means, dims = 4, gamma = gamma, lapse = lapse) {
+#   n_options <- length(means)/dims
+#   vals <- dim_splitter(means, dims)
+#
+#   p <- runif(n_options, 0, 1)
+#
+#   vals <- map2_dbl(transpose(vals), as.list(p), ~dist_picker(.y, unlist(.x)))
+#   res <- rnorm(vals, mean = vals, sd = lapse + gamma*abs(vals))
+#
+#   if (length(which(res == max(res))) > 1) return(choose_randdim(means, dims, gamma = gamma, lapse = lapse))
+#   return(which(res == max(res)) - 1)
+#
+# }
 
 
-dist_picker(0.36, unlist(transpose(vals)[1]))
-
-Which_SUT_n <- function(means, dims = 4, gamma = gamma, beta = beta) {
-  n_options <- length(means)/dims
-  vals <- dim_splitter(means, dims)
-
-  p <- runif(n_options, 0, 1)
-
-  vals <- map2_dbl(transpose(vals), as.list(p), ~dist_picker(.y, unlist(.x)))
-  res <- rnorm(vals, mean = vals, sd = beta + gamma*abs(vals))
-
-  if (length(which(res == max(res))) > 1) return(Which_randdim(means, dims, gamma = gamma, beta = beta))
-  return(which(res == max(res)) - 1)
-
-}
-
-
-beta <- 0
+lapse <- 0
 # gamma <- 0.46
 gamma <- 0.65
 n_mice <- 100
@@ -357,7 +764,7 @@ means <- c(20, 12.5, 0.5, 0.5, 20, 12.5, 0.5, 0.5)
 
 tibble(n = 1:1000) %>%
   rowwise() %>%
-  mutate(choice = Which_WTA(means, dims = dims, gamma = gamma, beta = beta)) %>%
+  mutate(choice = choose_WTA(means, dims = dims, gamma = gamma, lapse = lapse)) %>%
   ungroup() %>%
   summarise(performance = mean(choice))
 
@@ -371,7 +778,7 @@ means <- c(20, 12.5, 0.95, 0.5, 5, 12.5)
 
 tibble(n = 1:1000) %>%
   rowwise() %>%
-  mutate(choice = Which_WTA(means, dims = 3, gamma = gamma, beta = beta)) %>%
+  mutate(choice = choose_WTA(means, dims = 3, gamma = gamma, lapse = lapse)) %>%
   ungroup() %>%
   summarise(performance = mean(choice))
 
@@ -393,15 +800,15 @@ SUT_conds <- tibble(experiment = 1,
   rowwise() %>%
   mutate(return = max * probm + sec * probs,
          return2 = max2 * probm2 + sec2 * probs2,
-         rintmax = rint(c(max, max2)),
-         rintprobm = rint(c(probm, probm2)),
-         rintsec = rint(c(sec, sec2)),
-         rintprobs = rint(c(probs, probs2)))
+         rintmax = get_rint(c(max, max2)),
+         rintprobm = get_rint(c(probm, probm2)),
+         rintsec = get_rint(c(sec, sec2)),
+         rintprobs = get_rint(c(probs, probs2)))
+####which_priority?
 
-SUT_model_list <- list("Which_hurdle_n", "Which_SUT_n", "Which_prob_first", "Which_priority")
-# "Which_expected","Which_randdim", "Which_WTA"
-                       # "Which_WTA", )
-
+SUT_model_list <- list("choose_hurdle_n", "choose_SUT_n", "choose_prob_first", "choose_priority")
+# "choose_expected","choose_randdim", "choose_WTA"
+                       # "choose_WTA", )
 
 set.seed(42)
 simulations <- map2_df(SUT_model_list,
@@ -409,7 +816,7 @@ simulations <- map2_df(SUT_model_list,
                        ~modeller(SUT_conds, n_mice = n_mice, n_choices = n_choices,
                                  choice_fun = .x,
                                  input_vec = c(max, max2, probm, probm2, sec, sec2, probs, probs2),
-                                 model_num = .y, dims = dims, gamma = gamma, beta = beta))
+                                 model_num = .y, dims = dims, gamma = gamma, lapse = lapse))
 
 # write.table(simulations, file = paste0(getwd(),"/analysis/data/simulations.csv"),
 #             dec = ".", sep = ";")
@@ -417,6 +824,7 @@ simulations <- map2_df(SUT_model_list,
 # simulations %>%
 #   ggplot() +
 #   geom_density(aes(performance), size = 1.2) + facet_grid(model ~ cond)
+sesoi <- 0.1
 pred_lines <- simulations %>%
   filter(cond %in% c(0, 1)) %>%
   group_by(model, cond) %>%
@@ -488,11 +896,9 @@ means <- c(20, 8, 0.25, 0.5, 5, 0, 0.25, 0)
 
 tibble(n = 1:1000) %>%
   rowwise() %>%
-  mutate(choice = Which_SUT_n(means, dims = dims, gamma = gamma, beta = beta)) %>%
+  mutate(choice = choose_SUT_n(means, dims = dims, gamma = gamma, lapse = lapse)) %>%
   ungroup() %>%
   summarise(performance = mean(choice))
-
-
 
 CHAG_conds <- tibble(experiment = rep(c(1, 2), each = 20),
                      # name = c("H", "G", "A", "C", "H/2", "G/2", "A/2", "C/2"),
@@ -508,13 +914,13 @@ CHAG_conds <- tibble(experiment = rep(c(1, 2), each = 20),
   rowwise() %>%
   mutate(return = max * probm + sec * probs,
          return2 = max2 * probm2 + sec2 * probs2,
-         rintmax = rint(c(max, max2)),
-         rintprobm = rint(c(probm, probm2)),
-         rintsec = rint(c(sec, sec2)),
-         rintprobs = rint(c(probs, probs2)))
+         rintmax = get_rint(c(max, max2)),
+         rintprobm = get_rint(c(probm, probm2)),
+         rintsec = get_rint(c(sec, sec2)),
+         rintprobs = get_rint(c(probs, probs2)))
 
-CHAG_model_list <- list("Which_SUT_n", "Which_randdim", "Which_WTA")
-# "Which_expected", "Which_hurdle_n",, , "Which_prob_first", "Which_priority")
+CHAG_model_list <- list("choose_hurdle_n", "choose_SUT_n", "choose_prob_first", "choose_priority")
+# "choose_expected", "choose_hurdle_n",, , "choose_prob_first", "choose_priority")
 
 set.seed(42)
 CHAG_sims <- map2_df(CHAG_model_list,
@@ -522,22 +928,20 @@ CHAG_sims <- map2_df(CHAG_model_list,
                        ~modeller(CHAG_conds, n_mice = n_mice, n_choices = n_choices,
                                  choice_fun = .x,
                                  input_vec = c(max, max2, probm, probm2, sec, sec2, probs, probs2),
-                                 model_num = .y, dims = dims, gamma = gamma, beta = beta))
+                                 model_num = .y, dims = dims, gamma = gamma, lapse = lapse))
 
 # write.table(simulations, file = paste0(getwd(),"/analysis/data/simulations.csv"),
 #             dec = ".", sep = ";")
 
+# CHAG_lines <- CHAG_sims %>%
+#   filter(cond %in% c(max(cond), min(cond))) %>%
+#   group_by(model, cond) %>%
+#   summarise(performance = mean(performance)) %>%
+#   spread(cond, performance) %>%
+#   right_join(tibble(model = rep(1:5, each = 101),
+#                     prob = rep(seq(0, 1, by = 0.01), 5))) %>%
+#   mutate(pred = 1 - (1 - `0`)*(1 - prob) - prob*(1 - `1`))
 
-
-CHAG_lines <- CHAG_sims %>%
-  filter(cond %in% c(max(cond), min(cond))) %>%
-  group_by(model, cond) %>%
-  summarise(performance = mean(performance)) %>%
-  spread(cond, performance) %>%
-  right_join(tibble(model = rep(1:5, each = 101),
-                    prob = rep(seq(0, 1, by = 0.01), 5))) %>%
-  mutate(pred = 1 - (1 - `0`)*(1 - prob) - prob*(1 - `1`)) %>%
-  filter(model < 4)
 
 CHAG_sims %>%
   mutate(prob = ifelse(experiment == 1, 1, 0.5)) %>%
@@ -593,14 +997,14 @@ G_conds <- tibble(experiment = 1,
   rowwise() %>%
   mutate(return = max * probm + sec * probs,
          return2 = max2 * probm2 + sec2 * probs2,
-         rintmax = rint(c(max, max2)),
-         rintprobm = rint(c(probm, probm2)),
-         rintsec = rint(c(sec, sec2)),
-         rintprobs = rint(c(probs, probs2)))
+         rintmax = get_rint(c(max, max2)),
+         rintprobm = get_rint(c(probm, probm2)),
+         rintsec = get_rint(c(sec, sec2)),
+         rintprobs = get_rint(c(probs, probs2)))
 
 
-G_model_list <- list("Which_expected", "Which_hurdle_n", "Which_SUT_n",
-                     "Which_randdim", "Which_WTA", "Which_prob_first", "Which_priority")
+G_model_list <- list("choose_expected", "choose_hurdle_n", "choose_SUT_n",
+                     "choose_randdim", "choose_WTA", "choose_prob_first", "choose_priority")
 
 set.seed(42)
 G_sims <- map2_df(G_model_list,
@@ -608,7 +1012,7 @@ G_sims <- map2_df(G_model_list,
                      ~modeller(G_conds, n_mice = n_mice, n_choices = n_choices,
                                choice_fun = .x,
                                input_vec = c(max, max2, probm, probm2, sec, sec2, probs, probs2),
-                               model_num = .y, dims = dims, gamma = gamma, beta = beta))
+                               model_num = .y, dims = dims, gamma = gamma, lapse = lapse))
 
 
 G_sims %>%
@@ -717,17 +1121,17 @@ n_choices <- 100
 PF_conds <- tibble(experiment = 1, vol = 20, vol2 = 20,
                    prob = c(0.1, 0.2, 0.3, 0.4, 0.5, 0.5, 0.5, 0.5, 0.5), prob2 = c(0.5, 0.5, 0.5, 0.5, 0.5, 0.6, 0.7, 0.8, 0.9)) %>%
   rowwise() %>%
-  mutate(cond = rint(c(prob, prob2)))
+  mutate(cond = get_rint(c(prob, prob2)))
 
-model_list <- list("Which_val", "Which_hurdle", "Which_SUT",
-                   "Which_WTA", "Which_prob_first", "Which_lxgr")
+model_list <- list("choose_val", "choose_hurdle", "choose_SUT",
+                   "choose_WTA", "choose_prob_first", "choose_lxgr")
 
 set.seed(42)
 sims_PF <- map2_df(model_list,
                        as.list(1:length(model_list)),
                        ~modeller(PF_conds, n_mice = n_mice, n_choices = n_choices,
                                  choice_fun = .x, input_vec = c(vol, vol2, prob, prob2),
-                                 model_num = .y, dims = dims, gamma = gamma, beta = beta))
+                                 model_num = .y, dims = dims, gamma = gamma, lapse = lapse))
 
 
 sims_PF %>%
@@ -801,15 +1205,15 @@ SUT2_conds <- tibble(experiment = 1,
   mutate(return = max * probm + sec * probs,
          return2 = max2 * probm2 + sec2 * probs2)
 
-model_list <- list("Which_expected", "Which_hurdle_n", "Which_SUT_n", "Which_randdim",
-                   "Which_WTA", "Which_prob_first", "Which_priority")
+model_list <- list("choose_expected", "choose_hurdle_n", "choose_SUT_n", "choose_randdim",
+                   "choose_WTA", "choose_prob_first", "choose_priority")
 
 set.seed(42)
 sims_SUT2 <- map2_df(model_list,
                    as.list(1:length(model_list)),
                    ~modeller(SUT2_conds, n_mice = n_mice, n_choices = n_choices,
                              choice_fun = .x, input_vec = c(max, max2, probm, probm2, sec, sec2, probs, probs2),
-                             model_num = .y, dims = dims, gamma = gamma, beta = beta))
+                             model_num = .y, dims = dims, gamma = gamma, lapse = lapse))
 
 
 sims_SUT2 %>%
@@ -820,4 +1224,174 @@ sims_SUT2 %>%
   geom_hline(yintercept = 0.55, linetype = 2) +
   geom_hline(yintercept = 0.45, linetype = 2)
 
+
+
+############# gamma fits
+#############
+
+gammas <- seq(0.05, 2, by = 0.05)
+p_vols <- seq(0, 1, by = 0.05)
+
+ru_pars <- cross_df(list(cond = c("BPV1", "BPV2"),
+                                gam = gammas, p_vol = p_vols)) %>%
+  rowwise() %>%
+  mutate(args = map2(gam, p_vol, ~list(.x, 0, .y)))
+
+bl_ru_sims <- mdre %>%
+  filter(str_detect(cond, "BP"), experiment == 1) %>%
+  left_join(ru_pars) %>%
+  # slice(1) %>%
+  exp_tbl(n_pokes = 1)
+
+# baselines %>%
+#   group_by(cond) %>%
+#   summarise(mean_perf = mean(performance))
+
+
+bl_ru_sims <- bl_ru_sims %>%
+  rowwise() %>%
+  mutate(choice_rd = choose_SUT(list(option_1, option_2),
+                                u_fun = "u_rd",
+                                args = args))
+bl_ru_sims %>%
+  group_by(gam, p_vol, cond) %>%
+  summarise(choice_rd = mean(choice_rd == 2)) %>%
+  ggplot(aes(gam, choice_rd, color = cond)) +
+  facet_wrap(~ p_vol) +
+  geom_point() +
+  geom_smooth() +
+  stat_summary(data = baselines, aes(0.5, performance),
+               fun.data = mean_cl_boot, fun.args = list(conf.int = 0.95)) +
+  geom_hline(yintercept = 0.74, linetype = 2) +
+  geom_hline(yintercept = 0.66, linetype = 2)
+
+
+
+
+gamma_ru <- 0.5
+p_vol <- 0.25
+
+
+gen_pars <- cross_df(list(cond = c("BPV1", "BPV2"),
+                        gamma = gammas)) %>%
+  rowwise() %>%
+  mutate(args = map(gamma, ~list(gamma = .x, lapse = 0)))
+
+bl_wta_sims <- mdre %>%
+  filter(str_detect(cond, "BP"), experiment == 1) %>%
+  left_join(gen_pars) %>%
+  # slice(1) %>%
+  exp_tbl(n_pokes = 1)
+
+
+bl_wta_sims <- bl_wta_sims  %>%
+  rowwise() %>%
+  mutate(choice_wta = choose_SUT(list(option_1, option_2),
+                                u_fun = "u_sal_wta",
+                                args = args))
+bl_wta_sims %>%
+  group_by(gamma, cond) %>%
+  summarise(choice_wta = mean(choice_wta == 2)) %>%
+  ggplot(aes(gamma, choice_wta, color = cond)) +
+  # facet_wrap(~ p_vol) +
+  geom_point() +
+  geom_smooth() +
+  stat_summary(data = baselines, aes(0.5, performance),
+               fun.data = mean_cl_boot, fun.args = list(conf.int = 0.95)) +
+  geom_hline(yintercept = 0.74, linetype = 2) +
+  geom_hline(yintercept = 0.66, linetype = 2)
+
+gamma_wta <- 0.75
+
+
+
+pfirst_pars <- cross_df(list(cond = c("BPV1", "BPV2"),
+                         gamma = gammas, crit = seq(0.05, 1, by = 0.05))) %>%
+  rowwise() %>%
+  mutate(args = map2(gamma, crit, ~list(gamma = .x, lapse = 0, p_threshold = .y, v_threshold = .y)))
+
+bl_pfirst_sims <- mdre %>%
+  filter(str_detect(cond, "BP"), experiment == 1) %>%
+  left_join(pfirst_pars) %>%
+  # slice(1) %>%
+  exp_tbl(n_pokes = 1)
+
+
+bl_pfirst_sims <- bl_pfirst_sims %>%
+  rowwise() %>%
+  mutate(choice_pfirst = choose_SUT(list(option_1, option_2),
+                                u_fun = "u_sal_pfirst",
+                                args = args))
+bl_pfirst_sims %>%
+  group_by(gamma, crit, cond) %>%
+  summarise(choice_pfirst = mean(choice_pfirst == 2)) %>%
+  ggplot(aes(gamma, choice_pfirst, color = cond)) +
+  facet_wrap(~ crit) +
+  geom_point() +
+  geom_smooth() +
+  stat_summary(data = baselines, aes(0.5, performance),
+               fun.data = mean_cl_boot, fun.args = list(conf.int = 0.95)) +
+  geom_hline(yintercept = 0.74, linetype = 2) +
+  geom_hline(yintercept = 0.66, linetype = 2)
+
+gamma_pfirst <- 1
+p_threshold <- 0.8
+
+vfirst_pars <- cross_df(list(cond = c("BPV1", "BPV2"),
+                             gamma = gammas, crit = seq(0.05, 1, by = 0.05))) %>%
+  rowwise() %>%
+  mutate(args = map2(gamma, crit, ~list(gamma = .x, lapse = 0, p_threshold = .y, v_threshold = .y)))
+
+bl_vfirst_sims <- mdre %>%
+  filter(str_detect(cond, "BP"), experiment == 1) %>%
+  left_join(vfirst_pars) %>%
+  # slice(1) %>%
+  exp_tbl(n_pokes = 1)
+
+
+bl_vfirst_sims <- bl_vfirst_sims %>%
+  rowwise() %>%
+  mutate(choice_vfirst = choose_SUT(list(option_1, option_2),
+                                u_fun = "u_sal_vfirst",
+                                args = args))
+bl_vfirst_sims %>%
+  group_by(gamma, crit, cond) %>%
+  summarise(choice_vfirst = mean(choice_vfirst == 2)) %>%
+  ggplot(aes(gamma, choice_vfirst, color = cond)) +
+  facet_wrap(~ crit) +
+  geom_point() +
+  geom_smooth() +
+  stat_summary(data = baselines, aes(0.5, performance),
+               fun.data = mean_cl_boot, fun.args = list(conf.int = 0.95)) +
+  geom_hline(yintercept = 0.74, linetype = 2) +
+  geom_hline(yintercept = 0.66, linetype = 2)
+
+gamma_vfirst <- 0.5
+v_threshold <- 0.8
+
+
+bl_2scal_sims <- mdre %>%
+  filter(str_detect(cond, "BP"), experiment == 1) %>%
+  left_join(gen_pars) %>%
+  # slice(1) %>%
+  exp_tbl(n_pokes = 1)
+
+
+bl_2scal_sims <- bl_2scal_sims  %>%
+  rowwise() %>%
+  mutate(choice_2scal = choose_SUT(list(option_1, option_2),
+                                u_fun = "u_sut2",
+                                args = args))
+bl_2scal_sims %>%
+  group_by(gamma, cond) %>%
+  summarise(choice_2scal = mean(choice_2scal == 2)) %>%
+  ggplot(aes(gamma, choice_2scal, color = cond)) +
+  geom_point() +
+  geom_smooth() +
+  stat_summary(data = baselines, aes(0.5, performance),
+               fun.data = mean_cl_boot, fun.args = list(conf.int = 0.95)) +
+  geom_hline(yintercept = 0.74, linetype = 2) +
+  geom_hline(yintercept = 0.66, linetype = 2)
+
+gamma_2scal <- 0.6
 
