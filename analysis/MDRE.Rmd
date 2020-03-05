@@ -30,16 +30,15 @@ knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.pos = 
 
 # Abstract
 
-The experiments in this study were designed to test how mice use information from two reward dimensions (probability and volume) when deciding where to forage.  
-[Please provide an abstract of no more than 150 words. Your abstract should explain the main contributions of your article, and should not contain any material that is not included in the main text. ]
+When choosing among options that vary on multiple attributes, integrating the full information may be computationally costly and time-consuming. So-called noncompensatory decision rules that rely on partial information, for example when a difference on a single attribute overrides all others, may be ecologically more advantageous, despite deviations from economical optimality. Here we present a study that investigates to what extent animals rely on integration versus noncompensatory rules when choosing where to forage. Groups of mice were trained to obtain water from dispensers varying along two reward dimensions (probability and volume). The choices of the mice over the course of the experiment suggest an initial reliance on integrative rules, later displaced by a sequential rule, in which volume is evaluated before probability. Our results also demonstrate that while the evaluation of probability differences may depend on the reward volumes, the evaluation of volume differences is seemingly unaffected by the reward probabilities.    
 
 # Introduction
 
 Animals confronted with options that differ on a single attribute generally make economically rational choices consistent with gain maximization [@monteiro_starlings_2013; @rivalan_principles_2017]. In multiattribute choice [@pitz_judgment_1984; @jansen_development_2012; @hunt_hierarchical_2014] however, where reward attributes have to be weighed against each other (price vs. quality, risk vs. payoff, etc.), consistent deviations from economical rationality have been described in humans [@tversky_judgment_1974; @rieskamp_extending_2006; @katsikopoulos_one-reason_2008], non-human animals [@shafir_context-dependent_2002; @bateson_context-dependent_2003; @schuck-paim_state-dependent_2004; @scarpi_impact_2011], and even in non-neuronal organisms [@reid_information_2015]. Generally, departures from gain maximization can be accounted for by considering the ecological circumstances of an animal, which may confer fitness benefits to seemingly irrational choices [@kacelnik_meanings_2006; @houston_violations_2007; @mcnamara_natural_2014; @trimmer_optimal_2013].  
-An animal foraging in its natural environement mostly encounters food items that differ on multiple attributes, but only some of those attributes  affect the long-term gains. (We refer to those attributes as reward dimensions). In multidimensional choice the decision task can be considerably simplified if differences that are (nearly) equal are not evaluated but ignored [@tversky_intransitivity_1969; @pitz_judgment_1984; @shafir_intransitivity_1994; @shafir_comparative_2014]. For example, an animal might only consider the one reward dimension (e.g. prey size) that most strongly affects the long-term gains. Such decision processes in which one reward dimension overrides the others have been described as noncompensatory [@pitz_judgment_1984; @reid_information_2015] and can potentially increase speed and decrease computation costs at the expense of accuracy. Attributes can be considered sequentially, for example ranked by salience, until a sufficient difference is detected on one attribute so that a decision can be reached [@brandstatter_priority_2006; @jansen_development_2012]. In compensatory decision-making [@pitz_judgment_1984; @reid_information_2015], on the other hand, choice is affected by multiple attributes that are integrated into a common decision currency (utility) [@levy_root_2012]. A fully integrative approach that makes use of all the available information (also referred to as absolute reward evaluation @tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014) is equivalent to gain maximization. For example, if options differ along the reward dimensions of amount and probability of obtaining this amount, maximizing the gain is ensured by selecting the option with the highest expected value, which is the product of the amount and probability. Even in the case of a two-dimensional reward evaluation, a range of strategies are possible, from sequential and other noncompensatory rules, up to full integration.  
+An animal foraging in its natural environement mostly encounters food items that differ on multiple attributes, but only some of those attributes affect the long-term gains. (We refer to those attributes as reward dimensions). In multidimensional choice the decision task can be considerably simplified if differences that are (nearly) equal are not evaluated but ignored [@tversky_intransitivity_1969; @pitz_judgment_1984; @shafir_intransitivity_1994; @shafir_comparative_2014]. For example, an animal might only consider the one reward dimension (e.g. prey size) that most strongly affects the long-term gains. Such decision processes in which one reward dimension overrides the others have been described as noncompensatory [@pitz_judgment_1984; @reid_information_2015] and can potentially increase speed and decrease computation costs at the expense of accuracy. Attributes can be considered sequentially, for example ranked by salience, until a sufficient difference is detected on one attribute so that a decision can be reached [@brandstatter_priority_2006; @jansen_development_2012]. In compensatory decision-making [@pitz_judgment_1984; @reid_information_2015] on the other hand, choice is affected by multiple attributes that are integrated into a common decision currency (utility) [@levy_root_2012]. A fully integrative approach that makes use of all the available information (also referred to as absolute reward evaluation @tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014) is equivalent to gain maximization. For example, if options differ along the reward dimensions of amount and probability of obtaining this amount, maximizing the gain is ensured by selecting the option with the highest expected value, which is the product of the amount and probability. Even in the case of a two-dimensional reward evaluation, a range of strategies are possible, from sequential and other noncompensatory rules, up to full integration.  
 When studying animal decision-making, preferences are measured over many choices, especially when options differ in reward probability. Although a rational agent should exclusively select the most profitable option, animals can persist in choosing unprofitable options even after long training, usually at some low frequency. The partial preference observed in choice experiments can be explained by profitability matching [@kacelnik_central_1984], which states that animals proportionally allocate their effort depending on the relative pay-off of the options.  
 Scalar Utility Theory (SUT; @kacelnik_risky_1998; @marsh_framing_2002) is a framework that proposes a proximate mechanism that accounts for partial preferences in the context of reward amount and reward variability [@rosenstrom_scalar_2016]. Based on findings in psychophysics SUT postulates that cognitive representation of stimuli exhibit a *scalar property*, i.e. they have error distributions that are normal with a mean equal to the magnitude of the stimulus and a standard deviation that is proportional to the mean. In other words, SUT states that the memory traces of perceived or expected outcomes of choices are subjected to Weber's Law [@akre_psychophysics_2014] and that rewards are evaluated proportionally rather than linearly [@marsh_framing_2002; @rosenstrom_scalar_2016]. Since SUT models choice as sampling from the internal representations and selecting the most favorable sample it allows for making quantitative predictions about the strength of preferences from the subjective contrasts between options.  
-In previous experiments we have demonstrated that proportional processing can be used to predict the choice behavior of animals when options vary along a single dimension [@nachev_webers_2013; @rivalan_principles_2017]. In the present study we extend the application of proportional processing to multiattribute choice tasks with the aim to test whether (contradictory) information from two reward dimensions generates choices more consistent with integrative or noncompensatory decision rules.  
+In previous experiments we have demonstrated that proportional processing can be used to predict the choice behavior of animals when options vary along a single dimension [@nachev_webers_2013; @rivalan_principles_2017]. In the present study we extend the application of proportional processing and SUT to multiattribute choice tasks with the aim to test whether (contradictory) information from two reward dimensions generates choices more consistent with integrative or noncompensatory decision rules.  
 
 # Results
 
@@ -976,7 +975,12 @@ The last two models are examples of a lexicographic rule, in which the dimension
 
 ### Model fits
 
-All models described above share the same free parameter, the scalar factor $\gamma$. In order to obtain baseline estimates for $\gamma$ for each of the models (Table \@ref(tab:conds_tab)), we focused on the probability baseline discrimination performances of all mice in experiments 1, and 4 (conditions BPV1 and BPV2). Wherever possible we directly fit the models to these data or otherwise performed a grid search sensitivity analysis by varying $\gamma$ with steps of 0.05 in the range of (0.05, 2). We generated 100 decisions by 100 mice for each cell in this grid and then used locally weighted scatterplot smoothing (loess) to fit a model for each condition. The free parameter values that resulted in the smallest RMSEs compared to the observed baseline data were selected for the comparison of the six models (Table \@ref(tab:modTable)). We also performed a sensitivity analysis for different values of the free parameters $\theta_v$ in the randomly noncompensatory model and of the thresholds for volume and probability in the volume first and probability first models, in the range of (0, 1), with a step of 0.05. The resulting free parameter estimates (across animals) were then used in out-of-sample tests of the six models. For each of the experimental conditions in the four experiments (Table \@ref(tab:conds_tab)) and for each of the six models we simulated 100 choices by 100 (identically parametrized) mice. Over the 100 choices we calculated the discrimination performance for each mouse and then used the median of the individual discrimination performances as the model prediction. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1 and 4. Finally, we ranked the models by their RMSE scores.
+All models described above share the same free parameter, the scalar factor $\gamma$. In order to obtain baseline estimates for $\gamma$ for each of the models (Table \@ref(tab:conds_tab)), we focused on the probability baseline discrimination performances of all mice in experiments 1, and 4 (conditions BPV1 and BPV2). Wherever possible we directly fit the models to these data or otherwise performed a grid search sensitivity analysis by varying $\gamma$ with steps of 0.05 in the range of (0.05, 2). We generated 100 decisions by 100 mice for each cell in this grid and then used locally weighted scatterplot smoothing (loess) to fit a model for each condition. The free parameter values that resulted in the smallest RMSEs compared to the observed baseline data were selected for the comparison of the six models (Table \@ref(tab:modTable)). We also performed a sensitivity analysis for different values of the free parameters $\theta_v$ in the randomly noncompensatory model and of the thresholds for volume and probability in the volume first and probability first models, in the range of (0, 1), with a step of 0.05. The resulting free parameter estimates (across animals) were then used in out-of-sample tests of the six models. For each of the experimental conditions in the four experiments (Table \@ref(tab:conds_tab)) and for each of the six models we simulated 100 choices by 100 (identically parametrized) mice. Over the 100 choices we calculated the discrimination performance for each mouse and then used the median of the individual discrimination performances as the model prediction. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1 and 4. Finally, we ranked the models by their RMSE scores.  
+
+\newpage
+# Appendix {-}
+
+\beginsupplement
 
 (ref:labsensgen) **Sensitivity tests for the models that only had $\gamma$ as a free parameter.** Dots give the discrimination performances calculated from 1000 choices for each value of $\gamma$ tested [0.05 , 2] and for each of the baseline conditions "BPV1" (purple) and "BPV2" (yellow). Lines give the corresponding fits based on locally weighted scatterplot smoothing (loess). The dashed line gives the empirical mean discrimination performance from the baseline conditions "BPV1" and "BPV2" and the green arrows point to the value of gamma that resulted in the smallest root-mean-square-errors (RMSEs). These values were then used in the main simulations (Table \@ref(tab:modTable)). The different panels give the results for the scalar expected value (**A**), two-scalar (**B**), and winner-takes-all (**C**) models.  
 
@@ -1059,15 +1063,15 @@ if (isFALSE(show.legend)) {
 
 gena <- summ_gen_sims %>% 
   filter(model == "sev") %>% 
-  plot_sensitivity(obs_perf, hoffset = 0.15) 
+  plot_sensitivity(obs_perf, hoffset = 0.15, voffset = 0.05) 
 
 genb <- summ_gen_sims %>% 
   filter(model == "2scal") %>% 
-  plot_sensitivity(obs_perf, hoffset = 0.15) 
+  plot_sensitivity(obs_perf, hoffset = 0.15, voffset = 0.05) 
 
 genc <- summ_gen_sims %>% 
   filter(model == "wta") %>% 
-  plot_sensitivity(obs_perf, hoffset = 0.15)
+  plot_sensitivity(obs_perf, hoffset = 0.15, voffset = 0.05)
 
 ggarrange(gena, genb, genc, labels = c("A", "B", "C"))
 
@@ -1075,7 +1079,7 @@ ggarrange(gena, genb, genc, labels = c("A", "B", "C"))
   
 (ref:labsensrnonc) **Sensitivity tests for the randomly noncompensatory model.** Same notation as in Fig. \@ref(fig:sensgen). The different panels give the different values of the probability with which the volume dimension was chosen ($\theta_v$). For a non-biased randomly noncompensatory model we set $\theta_v$ = 0.5.   
   
-```{r sensrnonc, fig.height = 7, fig.width = 10, fig.cap="(ref:labsensrd)"}
+```{r sensrnonc, fig.height = 7, fig.width = 10, fig.cap="(ref:labsensrnonc)"}
 
 summ_rnonc_sims <- read.csv2(file = "data/sensitivity_rnonc.csv",
                         header = TRUE, dec = ".", sep = ";", na.strings = "NA")
@@ -1097,7 +1101,7 @@ plot_sensitivity(summ_pfirst_sims, obs_perf, sense_par = par, par_target_value =
    facet_wrap(~ par, labeller = label_bquote(threshold[p] == .(par)))
 
 ```
-
+  
 (ref:labsensvfirst) **Sensitivity tests for the volume first model.** Same notation as in Fig. \@ref(fig:sensgen). The different panels give the different values of the salience threshold that needed to be reached for one option to be preferred over the other. We set the value of the threshold for both the volume and probability dimensions to 0.8, based on the the psychometric function threshold for probability [@rivalan_principles_2017].  
 
 ```{r sensvfirst, fig.height = 7, fig.width = 10, fig.cap="(ref:labsensvfirst)"}
@@ -1109,12 +1113,7 @@ plot_sensitivity(summ_vfirst_sims, obs_perf, sense_par = par, par_target_value =
    facet_wrap(~ par, labeller = label_bquote(threshold[v] == .(par)))
 
 ```
-\newpage
-# Appendix {-}
-
-\beginsupplement
-
-
+  
 (ref:labsimexp1) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 1**. Columns give the condition names (Table \@ref(tab:conds)) and rows, the model number (Table \@ref(tab:modTable)).  Empirical data from the three cohorts are represented by differently color-filled density curves from the observed discrimination performances. Simulation data are represented by an empty thick-lined density curve. The dashed line gives the median of the empirical data and the dotted line - the median of the simulated data. The discrimination performance gives the relative visitation rate of the more profitable option, or, in the incongruent condition, the option with the higher volume.  
 
 ```{r simexp1, fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp1)"}
@@ -1291,8 +1290,7 @@ slopes_lm %>%
 # total_vol %>%
 #   ggplot(aes(n_vis, vol_consumed, color = IdLabel)) + geom_point() + facet_grid(cage ~ cond)
 ```
-
-
+  
 # Acknowledgments
 We thank Miléna Brunet, Alexia Hyde, and Sabine Wintergerst for data acquisition, Katja Frei for assistance with the mice, and Alexej Schatz for programming of the control software.   
 
