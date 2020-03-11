@@ -1,10 +1,7 @@
-require(dplyr)
-require(stringr)
-
+require(tidyverse)
 
 # folder <- choose.dir(caption = "Select main analysis folder")
 folder <- "analysis/data/"
-# setwd(folder)
 
 # load MasterTable. Change for analysis of different data set
 MasterTable <- read.csv2(file = paste0(folder, "metadata/MasterTable.csv"), header = TRUE, sep = ";",
@@ -28,8 +25,8 @@ load_raw_csv <- function(path) {
 
   # ISSUE: Most mouse files have a ";" too many just before "SystemMsg", leading to mismatched
   # column labels
-  # SOLUTION: Add a "Dummy" column label, load the list of labels from
-  # a "mastercolnames" file and then apply to all subsequent files.
+  # SOLUTION: Add a "Dummy" column label to a list of labels from
+  # a "mastercolnames" file and then apply to all subsequent files
 
   if (exists("mastercolnames")) {colnames(nthday) <- mastercolnames}
 
@@ -70,7 +67,7 @@ load_raw_csv <- function(path) {
 }
 
 days <- as.list(MasterTable$day)
-paths <- as.list(paste0(folder, daypathlist$path))
+paths <- as.list(paste0(folder, MasterTable$path))
 
 # function for aggregating data from all days and adding correct day column
 aggregate_days <- function(paths, days) {
@@ -83,7 +80,6 @@ aggregate_days <- function(paths, days) {
 
 
 alldays <- aggregate_days(paths, days) %>%
-  # filter(!str_detect(DateTime, "#")) %>%
   arrange(DateTime) %>% #sort chronologically
   mutate(DateTime = as.numeric(str_replace(DateTime, ",", ".")),
          DateTime = as.POSIXct(as.numeric(DateTime) * (60 * 60 * 24),

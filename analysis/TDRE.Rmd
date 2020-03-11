@@ -8,7 +8,6 @@ header-includes:
 always_allow_html: yes
 output:   
   bookdown::pdf_document2:
-  # word_document
     number_sections: no
     toc: no
 bibliography: TDRE.bib
@@ -46,15 +45,12 @@ In previous experiments we have demonstrated that proportional processing can be
 library(tidyverse)
 library(gridExtra)
 library(glue)
-# library(grid)
 library(lubridate)
-library(lme4)
-library(coin)
 library(kableExtra)
 library(Hmisc)
 library(broom)
 library(ggpubr)
-# library(broom.mixed)
+
 
 miceChoices <- read.csv2(file = "data/ChoicesOutput.csv", header = TRUE, dec = ".", sep = ";",
                             na.strings = "NA") %>%
@@ -74,10 +70,10 @@ miceChoices <- miceChoices %>%
   ungroup()
 
 summaries <- miceChoices %>%
-  group_by(cond, IdLabel, experiment, cohort, rint) %>%
+  group_by(cond, IdLabel, experiment, cohort) %>%
   # take all visits after the first 150 visits at the relevant dispensers:
   filter(relcount > 150) %>%
-  # in the following lines is an alternative cut-off point, which leads to very similar results
+  # in the commented filter is an alternative cut-off point, which leads to very similar results
   # take the last 100 visits at any of the dispensers:
   # filter(revcount < 101) %>%
   summarise(performance = mean(prof, na.rm = TRUE), sampling = 1 - mean(rel),
@@ -270,8 +266,6 @@ mean_ibv <- exp1_diff %>%
   mutate_all(round, 3)
 
 alpha_1 <- 0.05
-# n_compare <- 4
-# alpha_2 <- 4 * alpha_1 / (n_compare)^2 # alpha corrected for multiple comparisons
 
 annotation_1d <- tibble(x = 1.5, y = -0.07, label = "sesoi") 
 
@@ -458,7 +452,7 @@ pred_PV4 <- slopes %>%
 ## Experiment 3: Probability discrimination decreased with an increase in reward volume, but volume discrimination was not affected by changes in reward probability  
 In the previous experiments we used two different baseline conditions for each dimension (BPV1, BPV2, BVP1, and BVP2, Table \@ref(tab:conds)), in order to exhaust all combinations of reward stimuli and balance the experimental design. However, we also wanted to test whether the level of the background dimension despite being the same across choice options nevertheless affected the discrimination performance on the relevant dimension. If mice use a noncompensatory decision rule, we can predict that regardless of the level of the background dimension, the discrimination performance on the relevant dimension should remain constant. Alternatively,  authors have suggested that with absolute reward evaluation the subjective difference between the options decreases as the background (irrelevant) dimension increases and therefore the discrimination performance is also expected to decrease [@shafir_comparative_2014]. This prediction is derived from the concave shape of the utility function, which is generally assumed to increase at a decreasing rate with the increase in any reward dimension [@kahneman_prospect_1979; @kenrick_deep_2009; but see also @kacelnik_risky_1998]. The same prediction can be made if we assume that motivation decreases with satiety, i.e. the strength of preference decreases under rich environmental conditions [@schuck-paim_state-dependent_2004], for example at high reward volume or probability. In order to test whether the two reward dimensions (volume and probability) interact with each other even when one of them is irrelevant (being the same across choice options), we performed experiment 3.  
   
-The conditions in experiment 3 were chosen to be similar to the baseline conditions in the previous experiments, by having one background and one relevant dimension (Table \@ref(tab:conds)). The relevant dimension always differed between the two options. For the probability dimension, we selected the same values of 0.2 and 0.5 (*i* = 0.86), as in the previous experiments. For the volume dimension we selected the values of 4 $\mu$L (4.8 $\mu$L in cohort 2) and 10 $\mu$L (9.6 $\mu$L in cohort 2), because the combination of a higher volume with a probability of 0.8 was expected to result in an insufficient number of visits for analysis (Table \@ref(tab:conds)). Cohort 2 had different reward volumes due to differences in the pumping process between the two cages used (Animals, Materials, and Methods), which also resulted in a lower relative intensity for volume (0.67 instead of 0.86; we will return to this point in the discussion). There were four different levels for each background dimension (volume and probability, Table \@ref(tab:conds)). Each mouse had its own pseudo-random sequence of the eight possible conditions. In order to test whether the background dimension affected discrimination performance, we fitted linear mixed models for each dimension, with discrimination performance as the dependent variable, background level as the independent variable and mouse as a random variable, using lme4 in R [@bates_fitting_2015]. The background level was the proportion of the actual value to the maximum of the four values tested, e.g. the background levels for volumes `r bg_vol` were `r bg_lev_vol`, respectively. We defined *a priori* a smallest effect size of interest (sesoi), as `r sl_sesoi`, which is the slope that would result from a difference of 0.1 in discrimination performance between the smallest and the largest background levels (PV1 and PV4, 0.2 and 1, respectively). A slope estimate (whether positive or negative) within the sesoi interval was considered equivalent to zero and demonstrating a lack of an effect of background dimension.  
+The conditions in experiment 3 were chosen to be similar to the baseline conditions in the previous experiments, by having one background and one relevant dimension (Table \@ref(tab:conds)). The relevant dimension always differed between the two options. For the probability dimension, we selected the same values of 0.2 and 0.5 (*i* = 0.86), as in the previous experiments. For the volume dimension we selected the values of 4 $\mu$L (4.8 $\mu$L in cohort 2) and 10 $\mu$L (9.6 $\mu$L in cohort 2), because the combination of a higher volume with a probability of 0.8 was expected to result in an insufficient number of visits for analysis (Table \@ref(tab:conds)). Cohort 2 had different reward volumes due to differences in the pumping process between the two cages used (Animals, Materials, and Methods), which also resulted in a lower relative intensity for volume (0.67 instead of 0.86; we will return to this point in the discussion). There were four different levels for each background dimension (volume and probability, Table \@ref(tab:conds)). Each mouse had its own pseudo-random sequence of the eight possible conditions. In order to test whether the background dimension affected discrimination performance, we fitted linear regression models for each mouse and each dimension, with discrimination performance as the dependent variable and background level as the independent variable. The background level was the proportion of the actual value to the maximum of the four values tested, e.g. the background levels for volumes `r bg_vol` were `r bg_lev_vol`, respectively. We defined *a priori* a smallest effect size of interest (sesoi), as `r sl_sesoi`, which is the slope that would result from a difference of 0.1 in discrimination performance between the smallest and the largest background levels (PV1 and PV4, 0.2 and 1, respectively). A slope estimate (whether positive or negative) within the sesoi interval was considered equivalent to zero and demonstrating a lack of an effect of background dimension.  
   
 (ref:labresexp3) **Slope estimates for the effect of the background dimension on the discrimination performance in the relevant dimension**. The two choice options always differed along the relevant dimension (either probability or volume, given on the abscissa) at a fixed relative intensity. The discrimination performance for each mouse was measured at four different levels of the background dimension, which was set at the same values on both choice options during a single drinking session, but differed from condition to condition (Table \@ref(tab:conds)). Each dot is the individual slope estimate over the four different background dimensions, color-coded for cohort number. The smallest effect size of interest (dashed lines) was determined to be the slope (0.125) that would have resulted in a difference in discrimination performance of 0.1, from the lowest to the highest level of the background dimension. Large blue circles give the means and the blue vertical lines the 90%-confidence intervals from non-parametric bootstraps. Green whiskers give the 95% CI from non-parametric bootstraps.  
   
@@ -616,80 +610,7 @@ If we assume that mice do not change strategies or improve their discrimination 
 
 
 ```{r}
-#### gamma baseline fit for probability
-
-sev_fit <- function(p1, p2, gamma, lapse) {
-  pnorm(0, mean = p1 - p2, sd = lapse + gamma * sqrt(p1^2 + p2^2), lower.tail = FALSE)
-}
-
-# calculate the relative intensity difference / mean ratio
-rint <- function(vec) { # generalized relative intensity function for n inputs
-  if (max(vec) == min(vec) & min(vec) == 0) return(0)
-  length(vec) * (max(vec) - min(vec)) / sum(vec)
-}
-  
-baselines <- summaries %>%
-  filter(str_detect(cond, "BP"), experiment != 2) %>%
-  mutate(p1 = 0.5,
-         p2 = 0.2,
-         v1 = if_else(str_detect(cond, "1"), 4, 20),
-         v2 = map_dbl(v1, ~ . + rnorm(1))) %>%
-  group_by(IdLabel) %>%
-    mutate(relev_perf = 1 - sampling)
-
-
-gammas <- baselines %>%
-  group_by(IdLabel, cohort) %>%
-  group_nest() %>%
-  mutate(gamma_sev = map_dbl(data, 
-                         ~coef(nls(performance ~ 
-                                     sev_fit(p1, p2, gamma, lapse = 0),
-                                   weights = Nrel,
-                                   start = c(gamma = 0.5), 
-                                   lower = c(gamma = 0),
-                                   upper = c(gamma = 10),
-                                   data = .x,
-                                   algorithm = "port", 
-                                   control = list(maxiter = 50000,
-                                                  minFactor = 1/2000))))) %>%
-  select(-data)
-
-gamma_sev <- gammas %>%
- pull(gamma_sev) %>%
-  median() %>%
-  round(2)
-
-baselines_vol <- summaries %>%
-  filter(str_detect(cond, "BV")) %>%
-  mutate(p1 = 20,
-         p2 = 4) %>%
-  group_by(IdLabel) %>%
-  mutate(lapse = mean(sampling) * 2,
-           relev_perf = 1 - sampling)
-
-gammas_vol <- baselines_vol %>%
-  group_by(IdLabel, cohort) %>%
-  group_nest() %>%
-  mutate(gamma_sev = map_dbl(data,
-                             ~coef(nls(performance ~
-                                         sev_fit(p1, p2, gamma, lapse = 0),
-                                     weights = Nrel,
-                                     start = c(gamma = 0.5),
-                                     lower = c(gamma = 0),
-                                     upper = c(gamma = 10),
-                                     data = .x,
-                                     algorithm = "port",
-                                     control = list(maxiter = 50000,
-                                                    minFactor = 1/2000))))) %>%
-  select(-data)
-
-median_gamma_vol <- gammas_vol %>%
-   group_by(cohort != 2) %>%
-   summarise(med_gamma = median(gamma_sev), mad_gamma = mad(gamma_sev))
-
-med_g_vol <- gammas_vol %>%
-  ungroup() %>%
-  summarise(med_gamma = median(gamma_sev), mad_gamma = mad(gamma_sev))
+### load simulation data and calculate RMSEs
 
 sims_data <- read.csv2(file = "data/simulations.csv",
                         header = TRUE, dec = ".", sep = ";", na.strings = "NA") %>%
@@ -721,9 +642,8 @@ devs <- summ_sims %>%
   mutate(deviance = (m_perf - performance)^2,
          dev = abs(m_perf - performance))
 
-
 RMSEs <- devs %>%
-  filter(!(str_detect(cond, "BP") & experiment != 2)) %>%
+  filter(!(str_detect(cond, "BP") & experiment != 2)) %>% # select only out-of-sample data
   group_by(experiment, model) %>%
   summarise(RMSE = sqrt(mean(deviance, na.rm = TRUE))) %>%
   arrange(experiment, RMSE)
@@ -807,12 +727,6 @@ n_vis_exp3 <- miceChoices %>%
   inner_join(exp3_tab %>%
   select(cond, bg_level, cohort, dim))
 
-# n_vis_exp3 %>%
-#   ggplot() +
-#   geom_point(aes(bg_level, relcount, color = IdLabel)) +
-#     stat_smooth(aes(bg_level, relcount, color = IdLabel), method = lm, se = FALSE) +
-#   facet_grid(cohort ~ dim)
-
 n_vis_exp3 <- n_vis_exp3 %>%
   group_by(dim, cond) %>%
   summarise(mean_n = round(mean(relcount), 0),
@@ -825,18 +739,6 @@ n_low <- n_vis_exp3 %>%
 n_high <- n_vis_exp3 %>%
   filter(cond == "PV4") %>%
   select(-dim, -cond)
-
-mean_rew <- conds_tab %>%
-  group_by(experiment, cond) %>%
-  summarise(mean_rew = (ret + ret2)/2)
-
-# summaries %>%
-#   filter(experiment %in% 1:3) %>%
-#   inner_join(mean_rew) %>% 
-#   ggplot() +
-#   geom_point(aes(mean_rew, sampling, color = IdLabel)) +
-#   facet_grid(experiment ~ .) +
-#   stat_smooth(aes(mean_rew, sampling, color = IdLabel), method = lm, se = FALSE)
 
 ```
   
@@ -858,7 +760,6 @@ prop_long <- miceChoices %>%
   
 
 miceChoices %>%
-  # filter(eventDuration < 900000) %>%
   mutate(log_dur = log(eventDuration),
          cohort = factor(cohort),
          rewardstatus = ifelse(rewardstatus > 0, "rewarded", "unrewarded")) %>%
@@ -976,7 +877,7 @@ The last two models are examples of a lexicographic rule, in which the dimension
 
 ### Model fits
 
-All models described above share the same free parameter, the scalar factor $\gamma$. In order to obtain baseline estimates for $\gamma$ for each of the models (Table \@ref(tab:conds_tab)), we focused on the probability baseline discrimination performances of all mice in experiments 1, and 4 (conditions BPV1 and BPV2). Wherever possible we directly fit the models to these data or otherwise performed a grid search sensitivity analysis by varying $\gamma$ with steps of 0.05 in the range of (0.05, 2). We generated 100 decisions by 100 mice for each cell in this grid and then used locally weighted scatterplot smoothing (loess) to fit a model for each condition. The free parameter values that resulted in the smallest RMSEs compared to the observed baseline data were selected for the comparison of the six models (Table \@ref(tab:modTable)). We also performed a sensitivity analysis for different values of the free parameters $\theta_v$ in the randomly noncompensatory model and of the thresholds for volume and probability in the volume first and probability first models, in the range of (0, 1), with a step of 0.05. The resulting free parameter estimates (across animals) were then used in out-of-sample tests of the six models. For each of the experimental conditions in the four experiments (Table \@ref(tab:conds_tab)) and for each of the six models we simulated 100 choices by 100 (identically parametrized) mice. Over the 100 choices we calculated the discrimination performance for each mouse and then used the median of the individual discrimination performances as the model prediction. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1 and 4. Finally, we ranked the models by their RMSE scores.  
+All models described above share the same free parameter, the scalar factor $\gamma$. In order to obtain baseline estimates for $\gamma$ for each of the models (Table \@ref(tab:conds_tab)), we focused on the probability baseline discrimination performances of all mice in experiments 1 and 4 (conditions BPV1 and BPV2). We performed a grid search sensitivity analysis by varying $\gamma$ with steps of 0.05 in the range of (0.05, 2). We generated 100 decisions by 100 mice for each cell in this grid and then used locally weighted scatterplot smoothing (loess) to fit a model for each condition. The free parameter values that resulted in the smallest RMSEs compared to the observed baseline data were selected for the comparison of the six models (Table \@ref(tab:modTable)). We also performed a sensitivity analysis for different values of the free parameters $\theta_v$ in the randomly noncompensatory model and of the thresholds for volume and probability in the volume first and probability first models, in the range of (0, 1), with a step of 0.05. The resulting free parameter estimates (across animals) were then used in out-of-sample tests of the six models. For each of the experimental conditions in the four experiments (Table \@ref(tab:conds_tab)) and for each of the six models we simulated 100 choices by 100 (identically parametrized) mice. Over the 100 choices we calculated the discrimination performance for each mouse and then used the median of the individual discrimination performances as the model prediction. We then quantified the model fits to the empirical data by calculating root-mean-square-errors (RMSE), excluding the BPV1 and BPV2 conditions in experiments 1 and 4. Finally, we ranked the models by their RMSE scores.  
 
 \newpage
 # Appendix {-}
@@ -989,8 +890,16 @@ All models described above share the same free parameter, the scalar factor $\ga
 
 summ_gen_sims <- read.csv2(file = "data/sensitivity_gen.csv",
                         header = TRUE, dec = ".", sep = ";", na.strings = "NA") 
-  
-obs_perf <- 0.7
+
+observed <- summaries %>%
+  filter(str_detect(cond, "BP"), experiment %in% c(1, 4)) %>%
+  group_by(cond) %>%
+  summarise(obs_perf = round(mean(performance), 2))
+
+obs_perf <- observed %>%
+  pull(obs_perf) %>%
+  mean() %>%
+  round(1)
 
 plot_sensitivity <- function(tbl, obs_perf, sense_par = NULL, par_target_value = NULL, hoffset = 0, voffset = 0, show.legend = TRUE){
 
@@ -1130,7 +1039,6 @@ ggplot() +
   theme_bw() + scale_fill_viridis_d() +
   scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
   geom_vline(aes(xintercept = m_perf), linetype = 2, data = exp1) +
-  # geom_vline(xintercept = cv_fit(0.5, 0.2, cv = 0.7, lapse = 0.1), linetype = 1) +
   geom_vline(aes(xintercept = m_perf), linetype = 3, size = 1.2, data = summ_sims %>%
                filter(experiment == 1)) +
   labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
@@ -1252,44 +1160,6 @@ slopes_lm %>%
   geom_hline(yintercept = -sl_sesoi, linetype = 2) +
   theme_bw()
 
-# nose poke numbers
-# miceChoices %>%
-#   filter(cohort == 3) %>%
-#   group_by(day, cond, IdLabel) %>%
-#   summarise(n = n()) %>%
-#   arrange(day, cond, IdLabel)
-
-# feeder distributions
-# miceChoices %>%
-#   filter(!str_detect(cond, "r")) %>%
-#   group_by(day, cond, experiment, IdLabel, cohort, loc) %>%
-#   summarise(prof = mean(prof)) %>%
-#   group_by(cohort, IdLabel, loc) %>%
-#   summarise(prof = sum(prof, na.rm = TRUE))
-
-# deltat_ts <- miceChoices %>%
-#   # filter(rewardstatus == 1, prof == 0) %>%
-#   rowwise() %>%
-#   group_by(day, IdLabel, cond, experiment, prof) %>%
-#   mutate(deltat_reward = DateTime - lag(DateTime),
-#          cohort = factor(cohort)) %>%
-#   group_by(experiment, day, cond, prof, IdLabel, cohort) %>%
-#   summarise(median_deltat = median(deltat_reward, na.rm = TRUE)) 
-# 
-# 
-# deltat_ts %>%
-#   filter(cond != "explore") %>%
-#   # filter(!is.na(prof)) %>%
-#   ggplot(aes(cond, median_deltat, color = cohort)) +
-#   # geom_jitter(width = 0.4, alpha = 0.7) +
-#   stat_summary(fun.data = mean_cl_boot,
-#                fun.args = list(conf.int = 0.95)) +
-#   facet_grid(experiment ~ prof) +
-#   # ylim(0, 1000) +
-#   scale_color_viridis_d()
-
-# total_vol %>%
-#   ggplot(aes(n_vis, vol_consumed, color = IdLabel)) + geom_point() + facet_grid(cage ~ cond)
 ```
   
 # Acknowledgments
