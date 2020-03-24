@@ -33,10 +33,10 @@ When choosing among options that vary on multiple attributes, integrating the fu
 
 # Introduction
 
-Animals confronted with options that differ on a single attribute generally make economically rational choices consistent with gain maximization [@monteiro_starlings_2013; @rivalan_principles_2017]. In multiattribute choice [@pitz_judgment_1984; @jansen_development_2012; @hunt_hierarchical_2014] however, where reward attributes have to be weighed against each other (price vs. quality, risk vs. payoff, etc.), consistent deviations from economical rationality have been described in humans [@tversky_judgment_1974; @rieskamp_extending_2006; @katsikopoulos_one-reason_2008], non-human animals [@shafir_context-dependent_2002; @bateson_context-dependent_2003; @schuck-paim_state-dependent_2004; @scarpi_impact_2011; @nachev_psychophysics_2012; @nachev_cognition-mediated_2017; @constantinople_analysis_2019], and even in non-neuronal organisms [@reid_information_2015]. Generally, departures from gain maximization can be accounted for by considering the ecological circumstances of an animal, which may confer fitness benefits to seemingly irrational choices [@kacelnik_meanings_2006; @houston_violations_2007; @trimmer_optimal_2013; @mcnamara_natural_2014].  
-An animal foraging in its natural environment mostly encounters food items that differ on multiple attributes, but only some of those attributes affect the long-term gains. (We refer to those attributes as reward dimensions). In multidimensional choice the decision task can be considerably simplified if differences that are (nearly) equal are not evaluated but ignored [@tversky_intransitivity_1969; @pitz_judgment_1984; @shafir_intransitivity_1994; @shafir_comparative_2014]. For example, an animal might only consider the one reward dimension (e.g. prey size) that most strongly affects the long-term gains. Such decision processes in which one reward dimension overrides the others have been described as noncompensatory [@pitz_judgment_1984; @reid_information_2015] and can potentially increase speed and decrease computation costs at the expense of accuracy. Attributes can be considered sequentially, for example ranked by salience, until a sufficient difference is detected on one attribute so that a decision can be reached [@brandstatter_priority_2006; @jansen_development_2012]. In compensatory decision-making [@pitz_judgment_1984; @reid_information_2015] on the other hand, choice is affected by multiple attributes that are integrated into a common decision currency (utility) [@levy_root_2012]. A fully integrative approach that makes use of all the available information (also referred to as absolute reward evaluation @tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014) is equivalent to gain maximization. For example, if options differ along the reward dimensions of amount and probability of obtaining this amount, maximizing the gain is ensured by selecting the option with the highest expected value, which is the product of the amount and probability. Even in the case of a two-dimensional reward evaluation, a range of strategies are possible, from sequential and other noncompensatory rules, up to full integration.  
+Animals confronted with options that differ on a single attribute generally make economically rational choices consistent with gain maximization [@monteiro_starlings_2013; @rivalan_principles_2017]. In multiattribute choice [@pitz_judgment_1984; @jansen_development_2012; @hunt_hierarchical_2014] however, where reward attributes have to be weighed against each other (price *vs.* quality, risk *vs.* payoff, etc.), consistent deviations from economical rationality have been described in humans [@tversky_judgment_1974; @rieskamp_extending_2006; @katsikopoulos_one-reason_2008], non-human animals [@shafir_context-dependent_2002; @bateson_context-dependent_2003; @schuck-paim_state-dependent_2004; @scarpi_impact_2011; @nachev_psychophysics_2012; @nachev_cognition-mediated_2017; @constantinople_analysis_2019], and even in non-neuronal organisms [@reid_information_2015]. Generally, departures from gain maximization can be accounted for by considering the ecological circumstances of an animal, which may confer fitness benefits to seemingly irrational choices [@kacelnik_meanings_2006; @houston_violations_2007; @trimmer_optimal_2013; @mcnamara_natural_2014].  
+An animal foraging in its natural environment mostly encounters food items that differ on multiple attributes, but only some of those attributes affect the long-term gains. We refer to those attributes as reward dimensions. In multidimensional choice the decision task can be considerably simplified if differences that are (nearly) equal are not evaluated but ignored [@tversky_intransitivity_1969; @pitz_judgment_1984; @shafir_intransitivity_1994; @shafir_comparative_2014]. For example, an animal might only consider the one reward dimension (e.g. prey size) that most strongly affects the long-term gains. Such decision processes in which one reward dimension overrides the others have been described as noncompensatory [@pitz_judgment_1984; @reid_information_2015] and can potentially increase speed and decrease computation costs at the expense of accuracy. Attributes can be considered sequentially, for example ranked by salience, until a sufficient difference is detected on one attribute so that a decision can be reached [@brandstatter_priority_2006; @jansen_development_2012]. In compensatory decision-making [@pitz_judgment_1984; @reid_information_2015] on the other hand, choice is affected by multiple attributes that are integrated into a common decision currency (utility) [@levy_root_2012]. A fully integrative approach that makes use of all the available information (also referred to as absolute reward evaluation @tversky_intransitivity_1969; @shafir_intransitivity_1994; @shafir_comparative_2014) is equivalent to gain maximization. For example, if options differ along the reward dimensions of amount and probability of obtaining this amount, maximizing the gain is ensured by selecting the option with the highest expected value, which is the product of the amount and probability. Even in the case of a two-dimensional reward evaluation, a range of strategies are possible, from sequential and other noncompensatory rules, up to full integration.  
 When studying animal decision-making, preferences are measured over many choices, especially when options differ in reward probability. Although a rational agent should exclusively select the most profitable option, animals can persist in choosing unprofitable options even after long training, usually at some low frequency. The partial preference observed in choice experiments can be explained by profitability matching [@kacelnik_central_1984], which states that animals proportionally allocate their effort depending on the relative pay-off of the options.  
-Scalar Utility Theory (SUT; @kacelnik_risky_1998; @marsh_framing_2002) is a framework that proposes a proximate mechanism that accounts for partial preferences in the context of reward amount and reward variability [@rosenstrom_scalar_2016]. Based on findings in psychophysics SUT postulates that cognitive representation of stimuli exhibit a *scalar property*, i.e. they have error distributions that are normal with a mean equal to the magnitude of the stimulus and a standard deviation that is proportional to the mean. In other words, SUT states that the memory traces of perceived or expected outcomes of choices are subjected to Weber's Law [@akre_psychophysics_2014] and that rewards are evaluated proportionally rather than linearly [@marsh_framing_2002; @rosenstrom_scalar_2016]. Since SUT models choice as sampling from the internal representations and selecting the most favorable sample it allows for making quantitative predictions about the strength of preferences from the subjective contrasts between options.  
+Scalar Utility Theory (SUT; @kacelnik_risky_1998; @marsh_framing_2002) is a framework that proposes a proximate mechanism that accounts for partial preferences in the context of reward amount and reward variability [@rosenstrom_scalar_2016]. Based on findings in psychophysics SUT postulates that cognitive representation of stimuli exhibit a *scalar property*, i.e. they have error distributions that are normal with a mean equal to the magnitude of the stimulus and a standard deviation that is proportional to the mean. In other words, SUT states that the memory traces of perceived or expected outcomes of choices are subjected to Weber's Law [@akre_psychophysics_2014] and that rewards are evaluated proportionally rather than linearly [@marsh_framing_2002; @rosenstrom_scalar_2016]. Therefore, according to SUT choice is modelled by sampling from the internal representations and selecting the most favorable sample. This allows for making quantitative predictions about the strength of preferences from the subjective contrasts between options.  
 In previous experiments we have demonstrated that proportional processing can be used to predict the choice behavior of animals when options vary along a single dimension [@nachev_webers_2013; @rivalan_principles_2017]. In the present study we extend the application of proportional processing and SUT to multiattribute choice tasks with the aim to test whether (contradictory) information from two reward dimensions generates choices more consistent with integrative or noncompensatory decision rules.  
 
 # Results
@@ -177,9 +177,9 @@ conds_tab %>%
   
 ## Experiment 1: Mice consistently preferred the more profitable option, even with a trade-off between reward probability and reward volume   
 In the baseline conditions rewards only differed on one dimension (the relevant dimension), but not on the other dimension (the background dimension). For example, in the BVP1 condition (read as baseline for volume at probability 1), both options had the same probability of 0.2, but one option had a volume of 4 $\mu$L and the other, a volume of 20 $\mu$L (Table \@ref(tab:conds)). Based on previous experiments [@rivalan_principles_2017], we expected a baseline difference between 4 $\mu$L and 20 $\mu$L volumes to result in a similar discrimination performance (relative preference for the superior option) compared to a baseline difference between probabilities 0.2 and 0.5. In the C (congruent) condition one option was superior to the other on both dimensions. Finally, in the I (incongruent) condition each of the options was superior to the other on one of the reward dimensions, so that the option that had the higher volume had the lower probability and vice versa. Since the differences on both dimensions were chosen to be of comparable salience, we expected the mean discrimination performance in the incongruent condition to be at chance level (0.5).  
-In experiment 1 and in all subsequent experiments, each mouse had its individual pseudo-random sequence of conditions. However, each condition was experienced by each mouse in two consecutive drinking sessions (first exposure and reversal), with a spatial inversion of the two rewarding dispensers between the two sessions. In order to investigate how the two reward dimensions contributed towards choice, we looked at the contrasts between the baselines (when only one dimension was relevant) to the conditions when the two dimensions were congruent or incongruent to each other. We used equivalence tests [@lakens_equivalence_2017] with an *a priori* smallest effect size of interest (sesoi) of `r sesoi`. This sesoi was chosen based on variance observed in a previous study (see Fig.4 in Rivalan, Winter, Nachev 2017). When using equivalence tests, if the 90% confidence interval (CI) of the result estimate falls within the equivalence bounds (+sesoi, -sesoi) the effect is statistically smaller than any effect deemed worthwhile. If the 90% CI is not fully bounded by the sesoi, but the 95% CI includes the effect size of zero, the results are deemed inconclusive. Therefore, we only considered absolute differences of at least `r sesoi` percentage points to be of biological relevance. Smaller differences, regardless of their statistical significance using other tests, were considered to be trivial.  
+In experiment 1 and in all subsequent experiments, each mouse had its individual pseudo-random sequence of conditions. However, each condition was experienced by each mouse in two consecutive drinking sessions (first exposure and reversal), with a spatial inversion of the two rewarding dispensers between the two sessions. In order to investigate how the two reward dimensions contributed towards choice, we looked at the contrasts between the baselines (when only one dimension was relevant) to the conditions when the two dimensions were congruent or incongruent to each other. We used equivalence tests [@lakens_equivalence_2017] with an *a priori* smallest effect size of interest (sesoi) of `r sesoi`. This sesoi was chosen based on variance observed in a previous study (see Fig.4 in Rivalan, Winter, Nachev 2017). When using equivalence tests, if the 90% confidence interval (CI) of the result estimate falls within the equivalence bounds (+sesoi, -sesoi) the effect is statistically smaller than any effect deemed worthwhile (Animals, Materials, and Methods). If the 90% CI is not fully bounded by the sesoi, but the 95% CI includes the effect size of zero, the results are deemed inconclusive. Therefore, we only considered absolute differences of at least `r sesoi` percentage points to be of biological relevance. Smaller differences, regardless of their statistical significance using other tests, were considered to be trivial.  
   
-(ref:labresoverview) **Overview of discrimination performance for all mice in all experiments.** Experiments 1 through 4 are shown in different panels (1-4). Each colored dot is the mean discrimination performance of an individual mouse over two presentations of the same condition (first exposure and reversal). The experimental conditions are described in detail in Table \@ref(tab:conds). The discrimination performance gives the relative visitation rate of the more profitable option, or, in the incongruent condition, the option with the higher volume. Dotted line gives the chance level of 0.5. Data are shown in different colors for three different cohorts of eight mice each (total *n* = 24). Data from the same individuals are connected with lines. Cohort 2 (green symbols and lines) was tested in a different cage set-up than cohorts 1 and 2 (see Animals, Materials, and Methods for details). 
+(ref:labresoverview) **Overview of discrimination performance for all mice in all experiments.** Experiments 1 through 4 are shown in different panels (1-4). Each colored dot is the mean discrimination performance of an individual mouse over two presentations of the same condition (first exposure and reversal). The experimental conditions are described in detail in Table \@ref(tab:conds). The discrimination performance gives the relative visitation rate of the more profitable option, or, in the incongruent condition, the option with the higher volume. Dotted line gives the chance level of 0.5. Data are shown in different colors for three different cohorts of eight mice each (total *n* = 24). Data from the same individuals are connected with lines. Cohort 2 (green symbols and lines) was tested in a different cage set-up than cohorts 1 and 3 (see Animals, Materials, and Methods for details). 
 
 ```{r resoverview, fig.cap="(ref:labresoverview)"}
 ggexp12_4 <- summaries %>%
@@ -715,7 +715,6 @@ In similar and more complex choice situations when options vary on several dimen
 ## Scalar property considerations
 An alternative explanation of our main results is that the mice used the "volume first" heuristic from the beginning of the experiment, but only became better at discriminating volumes in the last two experiments. This interpretation is supported by the comparison between experiments 1 and 4 (Fig. \@ref(fig:exp4a)), as well as from previous experiments [@rivalan_principles_2017], in which mice improved their volume discrimination over time. However, it is not possible with these data to distinguish whether the effect was caused by training or age. Perhaps an increase in mouth capacity or in the number of salt taste receptors due to aging could allow adult mice to better discriminate water volumes. Comparing the discrimination performance of older naive and younger trained mice would help clarify this confound. In any case, the change in discrimination performance for volume between experiments 1 and 4 suggests that the scalar property only approximately holds, and that the $\gamma$ (coefficient of variation) for volume is not truly constant over a long period of time. This can be seen as evidence against the scalar expected value model, which assumes the coefficient of variation is the same for each reward dimension. Instead, these data support a version of the two-scalar model, in which there are two different scalars ($\gamma_{\pi} \neq \gamma_v$). Alternatively, there is only one scalar, but the weights of the two dimensions change over time (which can be implemented as a changing $\theta_v$ in the randomly noncompensatory model, Fig. \@ref(fig:sensrnonc)). 
 Yet another model extension that can account for the observed discrimination performances would be to introduce an explicit sampling (exploration-exploitation balance) method [@sih_linking_2012; @nachev_behavioral_2019]. In natural conditions reward dimensions rarely remain stable over time and foragers can benefit from making sampling choices to gather information about the current state of the environment. Thus, not all choices need to be based on expected values and individuals may differ in their sampling rates [@sih_linking_2012; @rivalan_principles_2017; @nachev_behavioral_2019]. With such an implementation it is not the scalar but the frequency of sampling visits that changes over time, resulting in different discrimination performances. The biggest challenge is that when it comes to volumes and probabilities, no direct method of interrogating an animal's estimate and coefficient of variation exist, so that researchers have to infer these values from choice behavior, which is also affected by motivation and sampling frequency. In contrast, when it comes to time intervals, the peak procedure gives us a more direct measurement of the time estimation of animal subjects [@kacelnik_risky_1998].  
-[//]: # (Sampling decreases with higher vols and probs (this data).
 
 ```{r}
 n_vis_exp3 <- miceChoices %>%
@@ -775,6 +774,10 @@ miceChoices %>%
 ```
 
 Our results revealed some striking differences in behavior between the three mouse cohorts (most obvious in Fig. \@ref(fig:exp4b)). The most likely explanation for this is an effect of the group cage. As explained in Animals, Methods, and Materials, the precision of the reward volumes was lower in cage 2, which housed cohort 2. However, it is unlikely that such a small magnitude of the difference ($0.33 \pm 0.03$  $\mu Lstep^{-1}$ in cage 1 vs. $1.56 \pm 0.24$  $\mu Lstep^{-1}$ in cage 2) could influence volume discrimination to the observed extent. Future experiments can address this issue by specifically manipulating the reliability of the volume dimension using the higher-precision pump. Instead, we suspect that the difference between cohorts might have been caused by the acoustic noise and vibrations produced by the stepping motors of the pumps. The pump in cage 1 was much louder, whereas the one in cage 2 was barely audible (to a human experimenter). This could have made it harder for mice in cage 2 to discern whether a reward was forthcoming. As a result, mice in cage 2 waited longer before leaving the dispenser during unrewarded nose pokes  (Fig. \@ref(fig:Idurs)). This potentially costly delay might have increased the relative importance of the probability dimension, resulting in the observed discrimination performance in cohort 2. Furthermore, the same line of reasoning can also explain the improved volume discrimination from the first to the fourth experiment: there was a shift towards shorter visit durations in the cohorts in the loud cage (cage 1) from the first to the fourth experiment (Fig. \@ref(fig:Idurs)), suggesting that mice had learned over time to abort the unrewarded visits. In an unrelated experiment we tested two cohorts of mice in both cages simultaneously and then translocated them to the other cage. The results demonstrated that differences in discrimination performance were primarily influenced by cage and not by cohort (Nachev, in prep.). Thus, the sound cue associated with reward delivery may be an important confounding factor in probability discrimination in mice, as it provides a signal for the reward outcome [@ojeda_paradoxical_2018].  
+
+## Conclusion
+
+In summary, our results show that mice could integrate reward volume and reward probability, which allowed them to select the more profitable option when the two reward dimensions varied independently. The resulting partial preference is consistent with Scalar Utility Theory. However, we also found that, with time mice improved their performance in volume (but not in probability) discrimination tasks and their choices became more consistent with a noncompensatory decision rule, in which volume is evaluated before probability. Finally, we found that mice could discriminate the same pair of probabilities better when the reward volumes were smaller, but changes in the reward probability did not affect their volume discrimination performance.  
 
 # Animals, Methods, and Materials
 
@@ -948,7 +951,7 @@ gamma_lab <-
   }
   
 pl <- tbl %>%
-  ggplot(aes(gamma, choice, color = cond)) +
+  ggplot(aes(gamma, performance, color = cond)) +
   geom_point() +
   geom_smooth() +
   geom_hline(yintercept = obs_perf, linetype = 2) +
@@ -1025,84 +1028,54 @@ plot_sensitivity(summ_vfirst_sims, obs_perf, sense_par = par, par_target_value =
 ```
   
 (ref:labsimexp1) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 1**. Columns give the condition names (Table \@ref(tab:conds)) and rows, the model number (Table \@ref(tab:modTable)).  Empirical data from the three cohorts are represented by differently color-filled density curves from the observed discrimination performances. Simulation data are represented by an empty thick-lined density curve. The dashed line gives the median of the empirical data and the dotted line - the median of the simulated data. The discrimination performance gives the relative visitation rate of the more profitable option, or, in the incongruent condition, the option with the higher volume.  
-
+ 
 ```{r simexp1, fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp1)"}
-exp1 <- exp1 %>%
-  group_by(cond) %>%
-  mutate(m_perf = median(performance))
 
+plot_density_sim <- function(exp, exp_num) {
+  
+  exp_num <- ensym(exp) %>% 
+    quo_name() %>%
+    parse_number()
+  
+  if(exp_num == 4) exp_num <- 1
+  
+  exp <- exp %>%
+    group_by(cond) %>%
+    mutate(m_perf = median(performance))
+  ggplot() +
+  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == exp_num)) +
 
-ggplot() +
-  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 1)) +
-  facet_grid(model ~ cond) +
-  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp1) +
+  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp) +
   theme_bw() + scale_fill_viridis_d() +
   scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
-  geom_vline(aes(xintercept = m_perf), linetype = 2, data = exp1) +
+  geom_vline(aes(xintercept = m_perf), linetype = 2, data = exp) +
   geom_vline(aes(xintercept = m_perf), linetype = 3, size = 1.2, data = summ_sims %>%
-               filter(experiment == 1)) +
-  labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
+               filter(experiment == exp_num)) +
+    facet_grid(model ~ cond) +
+  labs(fill = "cohort") +
+    guides(color = FALSE) +
+    theme(strip.text.y = element_text(angle = 0))
+}
 
+plot_density_sim(exp1)
 ```
 
 (ref:labsimexp2) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 2**. Same notation as in Fig. \@ref(fig:simexp1).
 
 ```{r simexp2,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp2)"}
-exp2 <- exp2 %>%
-  group_by(cond) %>%
-  mutate(m_perf = median(performance))
-
-ggplot() +
-  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 2)) +
-  facet_grid(model ~ cond) +
-  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp2) +
-  theme_bw() + scale_fill_viridis_d() +
-  scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
-  geom_vline(aes(xintercept = m_perf), linetype = 2, data = exp2) +
-  geom_vline(aes(xintercept = m_perf), linetype = 3, size = 1.2, data = summ_sims %>%
-               filter(experiment == 2)) +
-  labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
-
+plot_density_sim(exp2)
 ```
 
 (ref:labsimexp3) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 3**. Same notation as in Fig. \@ref(fig:simexp1). 
 
 ```{r simexp3,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp3)"}
-exp3 <- exp3 %>%
-  group_by(cond) %>%
-  mutate(m_perf = median(performance))
-
-ggplot() +
-  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 3)) +
-  facet_grid(model ~ cond) +
-  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp3) +
-  theme_bw() + scale_fill_viridis_d() +
-  scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
-  geom_vline(aes(xintercept = m_perf), linetype = 2, data = exp3) +
-  geom_vline(aes(xintercept = m_perf), linetype = 3, size = 1.2, data = summ_sims %>%
-               filter(experiment == 3)) +
-  labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
-
+plot_density_sim(exp3)
 ```
 
 (ref:labsimexp4) **Comparison of discrimination performances in all six simulation models and in the three mouse cohorts in Experiment 4**. Same notation as in Fig. \@ref(fig:simexp1). 
 
 ```{r simexp4,  fig.height = 7, fig.width = 10, fig.cap="(ref:labsimexp4)"}
-exp4 <- exp4 %>%
-  group_by(cond) %>%
-  mutate(m_perf = median(performance))
-
-ggplot() +
-  geom_density(aes(performance), size = 1.2, data = sims_data %>% filter(experiment == 1)) +
-  facet_grid(model ~ cond) +
-  geom_density(aes(performance, fill = cohort), alpha = 0.2, data = exp4) +
-  theme_bw() + scale_fill_viridis_d() +
-  scale_x_continuous(name = "discrimination performance", breaks = c(0, 0.5, 1)) +
-  geom_vline(aes(xintercept = m_perf), linetype = 2, data = exp4) +
-  geom_vline(aes(xintercept = m_perf), linetype = 3, size = 1.2, data = summ_sims %>%
-               filter(experiment == 1)) +
-  labs(fill = "cohort") + guides(color = FALSE) + theme(strip.text.y = element_text(angle = 0))
-
+plot_density_sim(exp4)
 ```
 
 (ref:labnpokes) **Total number of nose pokes for each experimental condition in the three cohorts in all experiments.** Rows show different experiments (1-4). Each symbol represents the total number of nose pokes for a single mouse over one of the two experimental days of the given condition.  

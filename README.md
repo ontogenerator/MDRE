@@ -119,4 +119,4 @@ This file is user-generated and allows mapping the raw csv files to the respecti
 |vol          |Measured volume [microLiters] with a graduated pipette (resolution of 1 microLiter)|
 |ulstep       |vol/steps, microLiters per step|
 
-For further information contact: vladsislav.nachev@gmail.com
+For further information contact: vladislav.nachev@gmail.com
