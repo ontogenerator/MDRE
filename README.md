@@ -1,5 +1,5 @@
 # TDRE
-Two-dimensional reward evaluation
+Two-dimensional reward evaluation in mice
 
 The folder "analysis/data/raw" contains csv files with raw data from full experimental runs of groups of mice inside a home cage with four water feeders.
 The files were produced by control software PhenoSoft Control v.1.0.5163.31723 (PhenoSys, GmbH).
