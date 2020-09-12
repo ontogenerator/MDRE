@@ -112,7 +112,7 @@ day;path;comments
 109;raw/AGC2VolProbDiscrim-15.11.02.csv;
 110;raw/AGC2VolProbDiscrim-15.11.03.csv;most mice's baseline conditions were repeated due to unusually few visits in the previous days. Only the repeats included in the analysis
 111;raw/AGC2VolProbDiscrim-15.11.04.csv;
-112;raw/VolProbDiscrimExplore-15.10.11.csv;training procedure needed to be altered by including an extra valve clicking phase, prior to this one (data excluded here)
+112;raw/VolProbDiscrimExplore-15.10.11.csv;training procedure needed to be altered by including an extra autoshaping (valve clicking) phase, prior to this one (data excluded here)
 113;raw/VolProbDiscrimExplore-15.10.12.csv;
 114;raw/VolProbDiscrim-15.10.13.csv;
 115;raw/VolProbDiscrim-15.10.14.csv;

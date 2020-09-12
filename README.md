@@ -14,7 +14,7 @@ The folder "analysis/R" contains R scripts, including a script for reading and a
 |IdRFID       |-        |RFID number of mouse|
 |IdLabel			|-        |Short unique mouse identifier|
 |unitLabel		|-        |Code of the unit that was activated, with numbers corresponding to the corners of the cage|
-|             |LS       |Detections of IR-beam interruptions without a trasnponder number                          detection|
+|             |LS       |Detections of IR-beam interruptions without a transnponder number                          detection|
 |             |Reader   |Detections of transponder numbers without IR-beam interruptions|
 |             |CondMod  |Detections of both a transponder number and an IR-beam                                    interruption (identified nose pokes)|
 |             |pumpBeh, Empty, Full| Events relating to states of the syringe and its refilling algorithm|

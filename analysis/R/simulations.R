@@ -3,7 +3,6 @@ library(assertthat)
 library(lubridate)
 library(rlang)
 ############# Main simulations
-
 ###### helper functions
 
 # calculate the relative intensity difference / mean ratio

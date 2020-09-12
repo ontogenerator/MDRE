@@ -19,9 +19,9 @@ load_raw_csv <- function(path) {
   nthday <- read.csv2(file = path,  sep = ";", dec = ".", header = TRUE,
             fileEncoding = "UTF-16LE", as.is = TRUE, row.names = NULL)
 
-  # Special case for the "Males" data set, which has a different number of columns:
+
   # solution: remove last column
-  if (ncol(nthday) == 19) {nthday <- nthday[, -19]}
+  # if (ncol(nthday) == 19) {nthday <- nthday[, -19]}
 
   # ISSUE: Most mouse files have a ";" too many just before "SystemMsg", leading to mismatched
   # column labels
@@ -31,7 +31,6 @@ load_raw_csv <- function(path) {
   if (exists("mastercolnames")) {colnames(nthday) <- mastercolnames}
 
   {colnames(nthday) <- mastercolnames} # rename column labels with correct order
-  nthday
 
   nthday <- nthday %>%
     arrange(DateTime)
@@ -96,7 +95,7 @@ alldays <- alldays %>%
     # numeric column for reward volume delivered
     vol = ifelse(is.na(reinforce1value), 0, reinforce1value / 3),
     # numeric column for reward status 1=rewarded, 0=unrewarded, helps calculate reward rates
-    rewardstatus = ifelse(vol > 0, 1, vol),
+    rewarded = ifelse(vol > 0, 1, vol),
     # create location column from the unitLabels
     loc = as.integer(str_extract(unitLabel, "[0-9]+"))
     )
