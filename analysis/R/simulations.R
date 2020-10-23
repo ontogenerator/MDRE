@@ -28,7 +28,7 @@ get_cum_weights <- function(p, beta, delta) {
   p_cum[1] <- p_1
   p_cum
 }
-
+renv::status()
 # convert a vector of vols and probabilities to a list of reward properties
 to_rew_list <- function(vols, probs) {
   sp <- sum(probs)
