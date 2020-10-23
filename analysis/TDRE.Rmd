@@ -313,7 +313,7 @@ For laboratory mice that have unrestricted access to a water bottle, the volume 
 In order to test whether the discrimination performance for one or both dimensions improved over time, we performed experiment 4, which had the same conditions as experiment 1 (Table \@ref(tab:conds)), but with a new pseudo-random order. The same mice participated in all experiments (1 to 4), with about seven weeks between experiment 1 and experiment 4.  
 
 ## Data analysis
-Data analysis and simulations were done using R [@r_core_team_r:_2020]. All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3726829.  
+Data analysis and simulations were done using R [@r_core_team_r:_2020]. All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3751285.  
 ```{r pokesummaries, include = FALSE}
 n_pokes <- miceChoices %>%
   filter(!str_detect(cond, "[r]")) %>%
@@ -1327,10 +1327,10 @@ Not applicable.
 Not applicable.
 
 ## Availability of data and material
-All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3726829.
+All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3751285.
 
 ## Code availability
-All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3726829.
+All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3751285.
 
 ## Authors' contributions
 V.N. Conceptualization, Methodology, Software, Formal Analysis, Data curation, Writing—original draft, Writing—review and editing, Visualization, Supervision, Project Administration.  
