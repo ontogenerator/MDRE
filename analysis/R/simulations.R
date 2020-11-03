@@ -28,13 +28,14 @@ get_cum_weights <- function(p, beta, delta) {
   p_cum[1] <- p_1
   p_cum
 }
-renv::status()
+
 # convert a vector of vols and probabilities to a list of reward properties
+# should be sorted by decreasing volumes
 to_rew_list <- function(vols, probs) {
   sp <- sum(probs)
 
   assert_that(sp <= 1, msg = "Probabilities must sum to at most one 1")
-
+  # if the probabilities do not add up to 1, assign the remaining probability to a volume of 0
   if (sp < 1) {
   vols <- c(vols, 0)
   probs <- c(probs, 1 - sp)
@@ -69,7 +70,8 @@ u_sut2 <- function(rew_ls, gamma, lapse, transform_probs = FALSE) {
   sum(u)
 }
 
-# random noncompensatory utility (from random dimension with scalar property)
+# generic random noncompensatory utility function (based on random dimension with scalar property)
+# with
 u_rnonc <- function(rew_ls, gamma, lapse, p_vol = 0.5, transform_probs = FALSE, subj_val = FALSE) {
   vols <- pluck(rew_ls, "vols")
   probs <- pluck(rew_ls, "probs")
@@ -89,9 +91,9 @@ u_rnonc <- function(rew_ls, gamma, lapse, p_vol = 0.5, transform_probs = FALSE, 
   rnorm(1, mean = u, sd = lapse + abs(u) * gamma)
 }
 
-# generic utility function that takes the first volume and probability outputs
-# for each option applies the scalar property and returns one sample per option
-u_all <- function(options_ls, args) {
+# take the first volume and probability outputs (should be sorted by decreasing volumes)
+# for each option, apply the scalar property and return one sample per option
+scalarize <- function(options_ls, args) {
   gamma <- pluck(args, "gamma")
   lapse <- pluck(args, "lapse")
 
@@ -99,11 +101,11 @@ u_all <- function(options_ls, args) {
     modify_depth(2, ~rnorm(1, mean = ., sd = lapse + abs(.) * gamma))
 }
 
-
+# change the arguments depending on the utility function
 update_args <- function(options_ls, u_fun = c("u_sal_wta", "u_sal_vfirst", "u_sal_pfirst"), args) {
 
   u_fun <- match.arg(u_fun)
-
+  # calculate saliences
   sal_vol <- map(options_ls, pluck("vols")) %>%
     map_dbl(1) %>%
     get_rint()
@@ -111,14 +113,14 @@ update_args <- function(options_ls, u_fun = c("u_sal_wta", "u_sal_vfirst", "u_sa
   sal_prob <- map(options_ls, pluck("probs")) %>%
     map_dbl(1) %>%
     get_rint()
-
+  # retrieve salience thresholds
   v_threshold <- pluck(args, "v_threshold")
   if (is_null(v_threshold)) v_threshold <- 0.8
   p_threshold <- pluck(args, "p_threshold")
   if (is_null(p_threshold)) p_threshold <- 0.8
 
 
-
+  # determine p_vol based on the type of utility function chosen and the value of the thresholds
   p_vol <- case_when(
       # u_fun == "u_sal_wta" & sal_prob == sal_vol ~ 0.5,
       u_fun == "u_sal_wta" & sal_vol > sal_prob ~ 1,
@@ -135,27 +137,26 @@ update_args <- function(options_ls, u_fun = c("u_sal_wta", "u_sal_vfirst", "u_sa
   list_modify(args, p_vol = p_vol, subj_val = TRUE, v_threshold = NULL, p_threshold = NULL)
 }
 
-u_fun <- "u_sal_vfirst"
 
-args <- list(gamma = gamma, lapse = lapse, v_threshold = v_threshold, p_threshold = p_threshold)
-
-
-# main choice function that takes a list of options, utility function and optional arguments and returns the selected option
+# choose an option from a list of options, depending on a
+# utility function and additional arguments
 choose_SUT <- function(options_ls, u_fun = c("u_sut", "u_sut2", "u_rnonc", "u_sal_wta", "u_sal_vfirst", "u_sal_pfirst"), args) {
 
   u_fun <- match.arg(u_fun)
-
+  # if a utility function that relies on salience is chosen, scalarize, update the arguments and
+  # change utility function to the rnonc utility function
   if (str_detect(u_fun, "sal")) {
-    options_ls <- u_all(options_ls, args)
+    options_ls <- scalarize(options_ls, args)
     args <- update_args(options_ls, u_fun, args)
     u_fun <- "u_rnonc"
   }
 
-  u <- map_dbl(options_ls, ~exec(u_fun, rew_ls = ., !!!args))
+  u <- map_dbl(options_ls, ~exec(u_fun, rew_ls = ., !!!args)) # calculate the utilities
 
-  choice <- which(u == max(u))
+  choice <- which(u == max(u)) # select option with the maximal utility
 
-  if (length(choice) > 1) return(sample(choice, 1))
+  if (length(choice) > 1) return(sample(choice, 1)) # if more than one option have the same utilities
+  # choose one of them at random
 
   choice
 }
