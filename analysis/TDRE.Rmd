@@ -109,10 +109,10 @@ n_crit <- binned_choices %>%
 summaries <- miceChoices %>%
   left_join(reversals) %>% 
   # take all nose pokes after the first 150 nose pokes at the relevant dispensers:
-  # filter(relcount > 150) %>%
+  filter(relcount > 150) %>%
   # in the commented filter are alternative cut-off points, which lead to very similar results
   # take all nose pokes after the first 150 nose pokes and before the 301st at the relevant dispensers:
-  filter(relcount > 150, relcount < 251) %>%
+  # filter(relcount > 150, relcount < 251) %>%
   # take the last 100 nose pokes at any of the dispensers (change to 21 to get the last 20 nose pokes):
   # filter(revcount < 101) %>%
   # yet another alternative is to only analyse nose pokes after criterion from binned data above is used:
@@ -322,7 +322,7 @@ For laboratory mice that have unrestricted access to a water bottle, the volume 
 In order to test whether the discrimination performance for one or both dimensions improved over time, we performed experiment 4, which had the same conditions as experiment 1 (Table \@ref(tab:conds)), but with a new pseudo-random order. The same mice participated in all experiments (1 to 4), with about seven weeks between experiment 1 and experiment 4.  
 
 ## Data analysis
-Data analysis and simulations were done using R [@r_core_team_r:_2020]. All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3751285.  
+Data analysis and simulations were done using R [@r_core_team_r:_2020]. All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.4223729.  
 ```{r pokesummaries, include = FALSE}
 n_pokes <- miceChoices %>%
   filter(!str_detect(cond, "[r]")) %>%
@@ -598,7 +598,7 @@ ggarrange(e1r, e1d, e1p, labels = c("a", "b", "c"))
 
 ```
   
-Generally, compared to the baselines, mice showed an increase in discrimination performance in the congruent condition and a decrease in performance in the incongruent condition (Fig. \@ref(fig:exp1)a,b). The only exception was the C - BVP2 contrast, which had an effect size smaller than the sesoi (`r glue("{mean_c_bvp2$y}, 95% CI = [{mean_c_bvp2$ymin}, {mean_c_bvp2$ymax}]")`). Furthermore, when we excluded cohort 3, the C - BVP2 contrast became equivalent to zero (`r glue("{mean_c_bvp2_coh13$y}, 95% CI = [{mean_c_bvp2_coh13$ymin}, {mean_c_bvp2_coh13$ymax}]")`). Contrary to our expectations based on previous work, the trade-off between volume and probability chosen for this experiment did not abolish preference for the higher volume option in the incongruent condition, with a discrimination performance significantly higher than the chance level of 0.5 (`r glue("{mean_inc1$y}, 95% CI = [{mean_inc1$ymin}, {mean_inc1$ymax}]")`, Fig. \@ref(fig:exp1)c). However, we again observed very different behavior in cohort 2, which showed a preference for the higher probability option (Fig. \@ref(fig:exp1)c). Thus, at least for mice in cohorts 1 and 3, in the incongruent condition there was a preference for the more profitable option and the subjective contrast in probability was not stronger than the subjective contrast in volume.  
+Generally, compared to the baselines, mice showed an increase in discrimination performance in the congruent condition and a decrease in performance in the incongruent condition (Fig. \@ref(fig:exp1)a,b). The only exception was the C - BVP2 contrast, which had an effect size smaller than the sesoi (`r glue("{mean_c_bvp2$y}, 95% CI = [{mean_c_bvp2$ymin}, {mean_c_bvp2$ymax}]")`). Furthermore, when we excluded cohort 2, the C - BVP2 contrast became equivalent to zero (`r glue("{mean_c_bvp2_coh13$y}, 95% CI = [{mean_c_bvp2_coh13$ymin}, {mean_c_bvp2_coh13$ymax}]")`). Contrary to our expectations based on previous work, the trade-off between volume and probability chosen for this experiment did not abolish preference for the higher volume option in the incongruent condition, with a discrimination performance significantly higher than the chance level of 0.5 (`r glue("{mean_inc1$y}, 95% CI = [{mean_inc1$ymin}, {mean_inc1$ymax}]")`, Fig. \@ref(fig:exp1)c). However, we again observed very different behavior in cohort 2, which showed a preference for the higher probability option (Fig. \@ref(fig:exp1)c). Thus, at least for mice in cohorts 1 and 3, in the incongruent condition there was a preference for the more profitable option and the subjective contrast in probability was not stronger than the subjective contrast in volume.  
  
 ## Experiment 2: Some evidence for equal weighing of reward probability and reward volume  
 
@@ -1336,10 +1336,10 @@ Not applicable.
 Not applicable.
 
 ## Availability of data and material
-All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3751285.
+All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.4223729.
 
 ## Code availability
-All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.3751285.
+All data and code are available in the Zenodo repository: https://doi.org/10.5281/zenodo.4223729.
 
 ## Authors' contributions
 V.N. Conceptualization, Methodology, Software, Formal Analysis, Data curation, Writing—original draft, Writing—review and editing, Visualization, Supervision, Project Administration.  
