@@ -199,14 +199,14 @@ n_inds <- 100
 sesoi <- 0.1
 
 #### define experimental conditions
-tdre1 <- tibble(cond = c("BPV1", "BPV2", "BVP1", "BVP2", "C", "I"),
+tdre1 <- tibble(cond = c("BPLV", "BPHV", "BVLP", "BVHP", "C", "I"),
                vol1 = c(4, 20, 4, 4, 4, 4),
                vol2 = c(4, 20, 20, 20, 20, 20),
                prob1 = c(0.2, 0.2, 0.2, 0.5, 0.2, 0.5),
                prob2 = c(0.5, 0.5, 0.2, 0.5, 0.5, 0.2),
                experiment = 1)
 
-tdre2 <- tibble(cond = c("BPV1", "BPV2", "BVP1", "BVP2", "C", "I"),
+tdre2 <- tibble(cond = c("BPLV", "BPHV", "BVLP", "BVHP", "C", "I"),
                vol1 = c(4, 20, 4, 4, 4, 4),
                vol2 = c(4, 20, 20, 20, 20, 20),
                prob1 = c(0.2, 0.2, 0.2, 1, 0.2, 1),
@@ -268,6 +268,9 @@ simulations <- res_test %>%
 write.table(simulations, file = paste0(getwd(),"/analysis/data/simulations.csv"),
             dec = ".", sep = ";", row.names = FALSE)
 
+write.table(res_test %>%
+              select(-option_1, -option_2), file = paste0(getwd(),"/analysis/data/large_outputs/simulations_raw.csv"),
+            dec = ".", sep = ";", row.names = FALSE) # this file not on github, due to large size
 
 ############# scalar property of the volume dispensing mechanism is too low to explain the scalar property in the choice of the mice
 vol_errors <- read.csv2(file = "analysis/data/metadata/vol_measurements.csv",
@@ -379,7 +382,7 @@ get_deviances_from_sims <- function(tbl, ...) {
 
 ########## fits for sev, 2scal, wta
 set.seed(15)
-gen_pars <- cross_df(list(cond = c("BPV1", "BPV2"),
+gen_pars <- cross_df(list(cond = c("BPLV", "BPHV"),
                         gamma = gammas)) %>%
   rowwise() %>%
   mutate(args = map(gamma, ~list(gamma = .x, lapse = 0)))
@@ -416,7 +419,7 @@ write.table(dev_gen_sims, file = paste0(getwd(),"/analysis/data/sensitivity_gen.
 
 ######### fit for pfirst
 set.seed(33)
-lxgr_pars <- cross_df(list(cond = c("BPV1", "BPV2"),
+lxgr_pars <- cross_df(list(cond = c("BPLV", "BPHV"),
                          gamma = gammas, par = seq(0.05, 1, by = 0.05))) %>%
   rowwise() %>%
   mutate(args = map2(gamma, par, ~list(gamma = .x, lapse = 0, p_threshold = .y, v_threshold = .y)))
@@ -451,7 +454,7 @@ write.table(dev_vfirst_sims, file = paste0(getwd(),"/analysis/data/sensitivity_v
             dec = ".", sep = ";", row.names = FALSE)
 ######### fit for nonc
 set.seed(92)
-rnonc_pars <- cross_df(list(cond = c("BPV1", "BPV2"),
+rnonc_pars <- cross_df(list(cond = c("BPLV", "BPHV"),
                          gamma = gammas, par = p_vols)) %>%
   rowwise() %>%
   mutate(args = map2(gamma, par, ~list(.x, 0, .y)))

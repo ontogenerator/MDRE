@@ -1,4 +1,4 @@
-require(tidyverse)
+library(tidyverse)
 
 # folder <- choose.dir(caption = "Select main analysis folder")
 folder <- "analysis/data/"
