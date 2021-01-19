@@ -6,11 +6,14 @@ header-includes:
    - \usepackage{float} \floatplacement{figure}{H}
    - \newcommand{\beginsupplement}{\setcounter{table}{0}  \renewcommand{\thetable}{S\arabic{table}} \setcounter{figure}{0} \renewcommand{\thefigure}{S\arabic{figure}}}
 always_allow_html: yes
-output:   
-  word_document: default
-  # bookdown::pdf_document2:
-  #   number_sections: no
-  #   toc: no
+output: 
+  # word_document
+  # pdf_document: 
+  #   fig_caption: yes
+  #   keep_tex: yes
+  bookdown::pdf_document2:
+    number_sections: no
+    toc: no
 bibliography: TDRE.bib
 ---
 Vladislav Nachev^1\*\S^, Marion Rivalan^1,2&#182;^, York Winter^1,2\S^
@@ -47,7 +50,6 @@ library(tidyverse)
 library(grid)
 library(glue)
 library(lubridate)
-library(kableExtra)
 library(Hmisc)
 library(broom)
 library(ggpubr)
@@ -306,8 +308,6 @@ conds_tab_text <- conds_tab %>%
   fontsize(size = 19, part = "header") %>%
   autofit() %>% 
   as_raster()
- #  ggtexttable(rows = NULL, theme = ttheme("blank")) %>%
- # tab_add_hline(at.row = 1:2, row.side = "top", linewidth = 2)
 
 gg_table <- ggplot() + 
   theme_void() + 
@@ -927,33 +927,31 @@ ranks_coh13 <- RMSEs_cohorts %>%
   rmse_ranks()
 ```
 
-```{r simRankTable}
-ranks %>%
-  knitr::kable(booktabs = TRUE,
-               caption = "Best performing models ranked by root-mean-square-errors (RMSE).") %>%
-  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
-                full_width = TRUE) %>%
-  kableExtra::add_header_above(c(" " = 1, "experiment" = 4))
+```{r simRankTable, tab.cap="Best performing models ranked by root-mean-square-errors (RMSE)."}
+ranks %>% 
+  flextable() %>% 
+  add_header_row(values = c("", "experiment"), colwidths = c(2, 3)) %>% 
+  theme_booktabs() %>% 
+  bold(part = "header")
+
 ```
 
-There was no single model that could best explain the choice of the mice in all four experiments, but the scalar expected value, two-scalar, and winner-takes-all models were in the top-three performing models most frequently (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), Figs. \@ref(fig:simexp1)-\@ref(fig:simexp4)). However, due to the unexpected differences in performance between cohort 2 and the other cohorts (e.g. Fig. \@ref(fig:simexp4)), we also ranked the models separately for the different mouse groups, depending on which cage they performed the experiments in (cohorts 1 and 3 in cage 1 and cohort 2 in cage 2). Indeed, two different patterns emerged for the different cages. For the two cohorts in cage 1, scalar expected value and two-scalar were the best supported models, followed by the winner-takes-all and volume first models (Table \@ref(tab:coh13RankTable). Notably, the volume first model was the best performing model in the later experiments 3 and 4, but the worst model in the earlier experiments 1 and 2. In contrast, the probability first model was the best supported model for cohort 2, followed by the randomly non-compensatory, winner-takes-all, and scalar expected value models (Table \@ref(tab:coh2RankTable)).  
+There was no single model that could best explain the choice of the mice in all four experiments, but the scalar expected value, two-scalar, and winner-takes-all models were in the top-three performing models most frequently (Tables \@ref(tab:modTable), \@ref(tab:simRankTable), Figs. \@ref(fig:simexp1)-\@ref(fig:simexp4)). However, due to the unexpected differences in performance between cohort 2 and the other cohorts (e.g. Fig. \@ref(fig:simexp4)), we also ranked the models separately for the different mouse groups, depending on which cage they performed the experiments in (cohorts 1 and 3 in cage 1 and cohort 2 in cage 2). Indeed, two different patterns emerged for the different cages. For the two cohorts in cage 1, scalar expected value and two-scalar were the best supported models, followed by the winner-takes-all and volume first models (Table \@ref(tab:coh13RankTable)). Notably, the volume first model was the best performing model in the later experiments 3 and 4, but the worst model in the earlier experiments 1 and 2. In contrast, the probability first model was the best supported model for cohort 2, followed by the randomly non-compensatory, winner-takes-all, and scalar expected value models (Table \@ref(tab:coh2RankTable)).  
 
-```{r coh13RankTable}
+```{r coh13RankTable, tab.cap="Best performing models ranked by root-mean-square-errors (RMSE) for cohorts 1 and 3."}
 ranks_coh13 %>%
-  knitr::kable(booktabs = TRUE,
-               caption = "Best performing models ranked by root-mean-square-errors (RMSE) for cohorts 1 and 3.") %>%
-  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
-                full_width = TRUE) %>%
-  kableExtra::add_header_above(c(" " = 1, "experiment" = 4))
+  flextable() %>% 
+  add_header_row(values = c("", "experiment"), colwidths = c(2, 3)) %>% 
+  theme_booktabs() %>% 
+  bold(part = "header")
 ```
 
-```{r coh2RankTable}
+```{r coh2RankTable, tab.cap="Best performing models ranked by root-mean-square-errors (RMSE) for cohort 2."}
 ranks_coh2 %>%
-  knitr::kable(booktabs = TRUE,
-               caption = "Best performing models ranked by root-mean-square-errors (RMSE) for cohort 2.") %>%
-  kableExtra::kable_styling(latex_options = c("striped", "hold_position"),
-                full_width = TRUE) %>%
-  kableExtra::add_header_above(c(" " = 1, "experiment" = 4))
+  flextable() %>% 
+  add_header_row(values = c("", "experiment"), colwidths = c(2, 3)) %>% 
+  theme_booktabs() %>% 
+  bold(part = "header")
 ```
 # Discussion
 The foraging choices of the mice in this study provide evidence both for and against full integration of reward volume and probability. In the first two experiments, most mice  differed in discrimination performance (increased or decreased) in the conditions in which both reward dimensions were simultaneously relevant (congruent and incongruent conditions) compared to the baselines, in which only one of the two dimensions was relevant at a time (Figs. \@ref(fig:exp1), \@ref(fig:exp2)). Consequently, the best supported models for these two experiments (cohort 2 excluded, see discussion about differences between cohorts below) were the models that made use of the full information from both reward dimensions (sev, 2scal), or from the dimension that was subjectively more salient (wta, Table. \@ref(tab:coh13RankTable)). Although these models were good predictors of choices in experiments 3 and 4 as well, the best-performing model in experiments 3 and 4 was the one that considered the volume dimension first and the probability dimension only if differences on the volume dimension were insufficient to reach a decision (Table \@ref(tab:coh13RankTable)). Thus, it appears that mice initially used information from all reward dimensions without bias and with experience started to rely more on one reward dimension and disregarded the other when both dimensions differed between choice options. Interestingly, in human development the use of integrative decision rules has also been shown to decrease with age [@jansen_development_2012].     
