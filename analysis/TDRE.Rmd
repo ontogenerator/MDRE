@@ -10,10 +10,10 @@ output:
   # word_document
   # pdf_document: 
   #   fig_caption: yes
-  #   keep_tex: yes
   bookdown::pdf_document2:
     number_sections: no
     toc: no
+    keep_tex: yes
 bibliography: TDRE.bib
 ---
 Vladislav Nachev^1\*\S^, Marion Rivalan^1,2&#182;^, York Winter^1,2\S^
