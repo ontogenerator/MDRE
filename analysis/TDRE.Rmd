@@ -16,15 +16,12 @@ output:
     keep_tex: yes
 bibliography: TDRE.bib
 ---
-Vladislav Nachev^1\*\S^, Marion Rivalan^1,2&#182;^, York Winter^1,2\S^
+Vladislav Nachev^1\*^, Marion Rivalan^1,2^, York Winter^1,2^
 
-^1^ Institute of Biology, Humboldt University, Berlin, Germany
-^2^ Charité University Medicine, Berlin, Germany
+^1^ Institute of Biology, Humboldt University, Philippstr. 13, 10099 Berlin, Germany  
+^2^ Exzellenzcluster NeuroCure, Charité University Medicine, Virchowweg 6, 10117 Berlin, Germany
 
 **^\*^For correspondence:** vladislav.nachev\@gmail.com  
-
-**Present Address:** ^\S^Dept. of Biology, Humboldt University, Philippstr. 13, 10099 Berlin, Germany
-^&#182;^Exzellenzcluster NeuroCure, Charité University Medicine, Virchowweg 6, 10117 Berlin, Germany
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, message = FALSE, warning = FALSE, fig.pos = "h")
@@ -387,7 +384,7 @@ From the remaining nose poke data we calculated the *discrimination performance*
 
 ### Equivalence tests in experiments 1, 2, and 4
 In order to investigate how the two reward dimensions contributed towards choice in experiments 1, 2, and 4, we looked at the contrasts between the baselines (when only one dimension was relevant) to the conditions when the two dimensions were congruent or incongruent to each other. We statistically evaluated these contrasts with the two one-sided procedure (TOST) for equivalence testing [@lauzon_easy_2009; @lakens_equivalence_2017].  
-First, we picked *a priori* a smallest effect size of interest (sesoi) as the difference in discrimination performance of `r sesoi` units in either direction. This value was chosen based on standard deviations (sd) in discrimination performance observed in previous studies [e.g. Fig. 4 in @rivalan_principles_2017], which ranged from 0.05 to 0.1. Although discrimination performance is bound by 0 and 1, most empirical values, especially the differences between two values, are far enough from these bounds so that their distribution approaches the normal. The expected sd of the difference between two normal distributions with sd of 0.1 (we conservatively picked the largest value) is $\sqrt{0.1^2 + 0.1^2} = 0.141$. With this standard deviation and a sample size of `r n_inds`, the equivalence bounds needed to detect equivalence of paired samples with a power of `r goal_power` are `r glue("[{-sesoi}, {sesoi}]")` [`powerTOSTpaired.raw` function in package `TOSTER`, @lakens_toster_2017]. The sesoi can be graphically represented as the `r glue("[{-sesoi}, {sesoi}]")` interval around the difference of zero, or as `r glue("[{0.5 - sesoi}, {0.5 + sesoi}]")` around the chance performance of 0.5.  
+First, we picked *a priori* a smallest effect size of interest (sesoi) as the difference in discrimination performance of `r sesoi` units in either direction. This value was chosen based on standard deviations (sd) in discrimination performance observed in previous studies [e.g. Fig. 4 in @rivalan_principles_2017], which ranged from 0.05 to 0.1. Although discrimination performance is bound by 0 and 1, most empirical values, especially the differences between two values, are far enough from these bounds so that their distribution approaches the normal. The expected sd of the difference between two normal distributions with sd of 0.1 (we conservatively picked the largest value) is $\sqrt{0.1^2 + 0.1^2} = 0.141$. With this standard deviation and a sample size of `r n_inds`, the equivalence bounds needed to detect equivalence of paired samples with a power of `r goal_power` are `r glue("[{-sesoi}, {sesoi}]")` [`powerTOSTpaired.raw` function in package `TOSTER`, @lakens_equivalence_2017]. The sesoi can be graphically represented as the `r glue("[{-sesoi}, {sesoi}]")` interval around the difference of zero, or as `r glue("[{0.5 - sesoi}, {0.5 + sesoi}]")` around the chance performance of 0.5.  
 We then estimated the mean differences and their confidence intervals (CIs) from 1000 non-parametric bootstraps using the `smean.cl.boot` function in  package `Hmisc` [@harrell_r_2019]. For a single equivalence test the 90% CI is usually constructed, i.e. $1 - 2\alpha$ with $\alpha = 0.05$, because both the upper and the lower confidence bounds are tested against the sesoi [@lauzon_easy_2009; @lakens_equivalence_2017]. This 90% CI can be fully bounded by the sesoi interval, in which case the observed effect is statistically smaller than any effect deemed worthwhile. In the opposite case there is no statistical support for equivalence. With conventional null hypothesis testing, the 95 % CI either does not include the null hypothesis (usually zero), in which case there is a statistically significant difference, or, if it does include the null, the difference is not statistically significant. When combining the equivalence and null hypothesis tests (which can also be done with examination of the 95% and 90% confidence intervals), there are four possible outcomes [@lakens_equivalence_2017]:  
 1. If the 90% CI is fully bounded by the sesoi and the 95% CI includes the null, there is statistical support for equivalence.  
 2. If the 90% CI is fully bounded by the sesoi, but the 95% CI does not include the null, there is statistical support for difference with an effect size smaller than the sesoi. This result can be interpreted as practical equivalence or trivial difference.  
